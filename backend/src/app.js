@@ -3,6 +3,10 @@ import cors from 'cors';
 import morgan from 'morgan';
 import { errorMiddleware } from './middleware/error.middleware.js';
 import { CORS_ORIGIN } from './config/env.js';
+import issueRoutes from './routes/issue.routes.js';
+
+// Import models to register Mongoose schemas (needed for populate)
+import './models/User.model.js';
 
 const app = express();
 
@@ -17,8 +21,8 @@ app.get('/health', (req, res) => {
   res.status(200).json({ status: 'success', message: 'Server is healthy' });
 });
 
-// API Routes - Team members will add their routes here
-// Example: app.use('/api/v1/resource-name', resourceRoutes);
+// API Routes
+app.use('/api/v1/issues', issueRoutes);
 
 // 404 handler
 app.all('*', (req, res) => {
@@ -32,3 +36,4 @@ app.all('*', (req, res) => {
 app.use(errorMiddleware);
 
 export default app;
+
