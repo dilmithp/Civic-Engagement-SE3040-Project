@@ -6,8 +6,14 @@ import { asyncHandler } from '../utils/asyncHandler.js';
 export const protect = asyncHandler(async (req, res, next) => {
   let token;
 
+  // Check Authorization header first (Bearer token)
   if (req.headers.authorization && req.headers.authorization.startsWith('Bearer')) {
     token = req.headers.authorization.split(' ')[1];
+  }
+
+  // Fallback: check httpOnly cookie (matches acquisitions service)
+  if (!token && req.cookies?.token) {
+    token = req.cookies.token;
   }
 
   if (!token) {
