@@ -11,3 +11,14 @@ Endpoint	Method	citizen	official	admin
 /api/users/:id	GET	✅ Auth'd	✅ Auth'd	✅ Auth'd
 /api/users/:id	PUT	✅ Own only	✅ Own only	✅ Any user
 /api/users/:id	DELETE	❌ 403	❌ 403	✅ Admin only
+
+
+user voating Endpoints
+
+POST   /api/v1/surveys                → Create survey (admin, official)
+GET    /api/v1/surveys/active         → List active surveys (all roles)
+GET    /api/v1/surveys/:id            → Get survey by ID (all roles)
+GET    /api/v1/surveys/:id/results    → Get results for Chart.js (all roles)
+PATCH  /api/v1/surveys/:id/vote       → Submit/update vote (all roles)
+PUT    /api/v1/surveys/:id            → Update survey (admin, official)
+DELETE /api/v1/surveys/:id            → Close survey (admin, official)

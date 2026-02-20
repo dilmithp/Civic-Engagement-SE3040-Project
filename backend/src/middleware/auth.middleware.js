@@ -21,8 +21,21 @@ export const protect = asyncHandler(async (req, res, next) => {
   }
 
   try {
-    const decoded = jwt.verify(token, JWT_SECRET);
-    req.user = decoded;
+    // Verify with HS256 only — must match acquisitions signing algorithm
+    const decoded = jwt.verify(token, JWT_SECRET, { algorithms: ['HS256'] });
+
+    // Validate token has required fields from acquisitions JWT
+    if (!decoded.id || !decoded.role) {
+      return next(new AppError('Invalid token structure', 401));
+    }
+
+    // Coerce id to string for MongoDB compatibility
+    req.user = {
+      id: String(decoded.id),
+      email: decoded.email,
+      role: decoded.role
+    };
+
     next();
   } catch (error) {
     return next(new AppError('Not authorized to access this route', 401));
