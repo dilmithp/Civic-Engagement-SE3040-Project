@@ -1,0 +1,13 @@
+['citizen', 'official', 'admin']
+
+
+end points login api
+
+Endpoint	Method	citizen	official	admin
+/api/auth/sign-up	POST	✅ Public	✅ Public	✅ Public
+/api/auth/sign-in	POST	✅ Public	✅ Public	✅ Public
+/api/auth/sign-out	POST	✅ Public	✅ Public	✅ Public
+/api/users	GET	❌ 403	❌ 403	✅ Admin only
+/api/users/:id	GET	✅ Auth'd	✅ Auth'd	✅ Auth'd
+/api/users/:id	PUT	✅ Own only	✅ Own only	✅ Any user
+/api/users/:id	DELETE	❌ 403	❌ 403	✅ Admin only
