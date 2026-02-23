@@ -1,3 +1,4 @@
+import greenInitiativeRoutes from './routes/greenInitiative.routes.js';
 import express from 'express';
 import cors from 'cors';
 import morgan from 'morgan';
@@ -5,6 +6,7 @@ import cookieParser from 'cookie-parser';
 import { errorMiddleware } from './middleware/error.middleware.js';
 import { CORS_ORIGIN } from './config/env.js';
 import issueRoutes from './routes/issue.routes.js';
+
 
 // Import models to register Mongoose schemas (needed for populate)
 import './models/User.model.js';
@@ -17,6 +19,7 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
 app.use(morgan('dev'));
+app.use('/api/v1/green-initiatives', greenInitiativeRoutes);
 
 // Health check route
 app.get('/health', (req, res) => {
