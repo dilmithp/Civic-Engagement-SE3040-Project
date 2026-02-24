@@ -4,6 +4,7 @@ import morgan from 'morgan';
 import { errorMiddleware } from './middleware/error.middleware.js';
 import { CORS_ORIGIN } from './config/env.js';
 import issueRoutes from './routes/issue.routes.js';
+import geocodingRoutes from './routes/geocoding.routes.js';
 
 // Import models to register Mongoose schemas (needed for populate)
 import './models/User.model.js';
@@ -23,6 +24,7 @@ app.get('/health', (req, res) => {
 
 // API Routes
 app.use('/api/v1/issues', issueRoutes);
+app.use('/api/v1/geocode', geocodingRoutes);
 
 // 404 handler
 app.all('*', (req, res) => {
