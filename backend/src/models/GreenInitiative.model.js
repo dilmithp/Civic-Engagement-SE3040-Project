@@ -26,15 +26,14 @@ const greenInitiativeSchema = new mongoose.Schema(
             enum: ['Upcoming', 'Ongoing', 'Completed'],
             default: 'Upcoming'
         },
+        // Changed from ObjectId to Number to match your friend's SQL database
         organizer: {
-            type: mongoose.Schema.Types.ObjectId,
-            ref: 'User',
+            type: Number,
             required: true
         },
         participants: [
             {
-                type: mongoose.Schema.Types.ObjectId,
-                ref: 'User'
+                type: Number
             }
         ]
     },

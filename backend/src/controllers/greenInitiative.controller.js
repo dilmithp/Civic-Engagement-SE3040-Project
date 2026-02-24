@@ -7,7 +7,7 @@ import { sendSuccess } from '../utils/response.js';
 // @route   POST /api/v1/green-initiatives
 // @access  Private
 export const createInitiative = asyncHandler(async (req, res, next) => {
-    req.body.organizer = req.user.id; // Assign logged-in user as organizer
+    req.body.organizer = req.user.id; // Will now save as Number 19
 
     const initiative = await GreenInitiative.create(req.body);
 
@@ -18,9 +18,8 @@ export const createInitiative = asyncHandler(async (req, res, next) => {
 // @route   GET /api/v1/green-initiatives
 // @access  Public
 export const getAllInitiatives = asyncHandler(async (req, res, next) => {
-    const initiatives = await GreenInitiative.find()
-        .populate('organizer', 'name email')
-        .sort('-createdAt');
+    // Removed .populate() because users are in SQL now
+    const initiatives = await GreenInitiative.find().sort('-createdAt');
 
     sendSuccess(res, 200, initiatives, 'Initiatives retrieved successfully');
 });
@@ -29,9 +28,8 @@ export const getAllInitiatives = asyncHandler(async (req, res, next) => {
 // @route   GET /api/v1/green-initiatives/:id
 // @access  Public
 export const getInitiativeById = asyncHandler(async (req, res, next) => {
-    const initiative = await GreenInitiative.findById(req.params.id)
-        .populate('organizer', 'name email')
-        .populate('participants', 'name');
+    // Removed .populate() because users are in SQL now
+    const initiative = await GreenInitiative.findById(req.params.id);
 
     if (!initiative) {
         return next(new AppError('Initiative not found', 404));
@@ -43,6 +41,9 @@ export const getInitiativeById = asyncHandler(async (req, res, next) => {
 // @desc    Update a green initiative
 // @route   PUT /api/v1/green-initiatives/:id
 // @access  Private (Only organizer)
+// @desc    Update a green initiative
+// @route   PUT /api/v1/green-initiatives/:id
+// @access  Private (Only organizer)
 export const updateInitiative = asyncHandler(async (req, res, next) => {
     let initiative = await GreenInitiative.findById(req.params.id);
 
@@ -50,9 +51,12 @@ export const updateInitiative = asyncHandler(async (req, res, next) => {
         return next(new AppError('Initiative not found', 404));
     }
 
-    // Ensure user is the organizer
-    if (initiative.organizer.toString() !== req.user.id && req.user.role !== 'admin') {
-        return next(new AppError('Not authorized to update this initiative', 403));
+    // DEBUG ERROR MESSAGE: This will print the IDs to Postman!
+    if (String(initiative.organizer) !== String(req.user.id) && req.user.role !== 'admin') {
+        return res.status(403).json({
+            status: 'fail',
+            message: `DEBUG MISMATCH: Database saved organizer as '${initiative.organizer}', but your token says you are '${req.user.id}'.`
+        });
     }
 
     initiative = await GreenInitiative.findByIdAndUpdate(req.params.id, req.body, {
@@ -73,12 +77,10 @@ export const deleteInitiative = asyncHandler(async (req, res, next) => {
         return next(new AppError('Initiative not found', 404));
     }
 
-    // Ensure user is the organizer
-    if (initiative.organizer.toString() !== req.user.id && req.user.role !== 'admin') {
+    if (String(initiative.organizer) !== String(req.user.id) && req.user.role !== 'admin') {
         return next(new AppError('Not authorized to delete this initiative', 403));
     }
 
-    // Use the Model to delete the document directly from the database
     await GreenInitiative.findByIdAndDelete(req.params.id);
 
     sendSuccess(res, 200, null, 'Initiative deleted successfully');
