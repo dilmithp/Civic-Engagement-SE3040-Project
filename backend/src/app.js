@@ -7,7 +7,7 @@ import { errorMiddleware } from './middleware/error.middleware.js';
 import { CORS_ORIGIN } from './config/env.js';
 import issueRoutes from './routes/issue.routes.js';
 
-import './models/User.model.js'; // Keep this so Mongoose can populate organizers
+import './models/User.model.js'; //  Mongoose can populate organizers
 
 const app = express();
 
