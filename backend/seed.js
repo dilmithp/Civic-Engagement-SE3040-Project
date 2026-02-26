@@ -18,9 +18,9 @@ const usersData = [
 
 async function seedDatabase() {
     try {
-        console.log('🌱 Connecting to MongoDB...');
+        console.log('Connecting to MongoDB...');
         await mongoose.connect(MONGODB_URI);
-        console.log('✅ Connected!\n');
+        console.log(' Connected!\n');
 
         // Clear existing data
         const deletedIssues = await Issue.deleteMany({});
@@ -246,9 +246,9 @@ async function seedDatabase() {
         console.log(`   Resolved:    ${inserted.filter((i) => i.status === 'Resolved').length}`);
         console.log(`   Withdrawn:   ${inserted.filter((i) => i.status === 'Withdrawn').length}`);
 
-        console.log('\n✅ Seeding complete!');
+        console.log('\nSeeding complete!');
     } catch (error) {
-        console.error('❌ Seeding failed:', error.message);
+        console.error('Seeding failed:', error.message);
     } finally {
         await mongoose.disconnect();
         console.log('🔌 Disconnected from MongoDB.');
