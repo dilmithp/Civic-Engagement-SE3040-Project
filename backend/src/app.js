@@ -2,19 +2,17 @@ import greenInitiativeRoutes from './routes/greenInitiative.routes.js';
 import express from 'express';
 import cors from 'cors';
 import morgan from 'morgan';
-import cookieParser from 'cookie-parser';
 import { errorMiddleware } from './middleware/error.middleware.js';
 import { CORS_ORIGIN } from './config/env.js';
 import issueRoutes from './routes/issue.routes.js';
 
-import './models/User.model.js'; // Keep this so Mongoose can populate organizers
+
 
 const app = express();
 
 app.use(cors({ origin: CORS_ORIGIN, credentials: true }));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-app.use(cookieParser());
 app.use(morgan('dev'));
 
 // Your Routes
