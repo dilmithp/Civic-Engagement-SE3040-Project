@@ -18,12 +18,7 @@ app.use(morgan('dev'));
 // API Routes
 app.use('/api/v1/green-initiatives', greenInitiativeRoutes);
 app.use('/api/v1/issues', issueRoutes);
-app.use('/api/marketplace', marketplaceRoutes);
-app.use('/api/v1/surveys', surveyRoutes);
-
-app.get('/health', (req, res) => {
-    res.status(200).json({ status: 'success', message: 'Server is healthy' });
-});
+app.use('/api/v1/marketplace', marketplaceRoutes);
 
 // 404 handler
 app.all('*', (req, res) => {

@@ -106,7 +106,8 @@ class MarketplaceService {
             throw new AppError('Listing not found', 404);
         }
 
-        if (listing.owner.toString() !== user.id && user.role !== 'admin') {
+        const userId = user.id || user._id;
+        if (listing.owner.toString() !== userId && user.role !== 'admin') {
             throw new AppError('You are not authorized to update this listing', 403);
         }
 
@@ -136,7 +137,8 @@ class MarketplaceService {
             throw new AppError('Listing not found', 404);
         }
 
-        if (listing.owner.toString() !== user.id && user.role !== 'admin') {
+        const userId = user.id || user._id;
+        if (listing.owner.toString() !== userId && user.role !== 'admin') {
             throw new AppError('You are not authorized to change the status of this listing', 403);
         }
 
@@ -162,7 +164,8 @@ class MarketplaceService {
             throw new AppError('Listing not found', 404);
         }
 
-        if (listing.owner.toString() !== user.id && user.role !== 'admin') {
+        const userId = user.id || user._id;
+        if (listing.owner.toString() !== userId && user.role !== 'admin') {
             throw new AppError('You are not authorized to delete this listing', 403);
         }
 
