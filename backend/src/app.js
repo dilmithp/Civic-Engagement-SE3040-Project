@@ -5,6 +5,7 @@ import morgan from 'morgan';
 import { errorMiddleware } from './middleware/error.middleware.js';
 import { CORS_ORIGIN } from './config/env.js';
 import issueRoutes from './routes/issue.routes.js';
+import surveyRoutes from './routes/survey.routes.js';
 
 
 
@@ -18,6 +19,7 @@ app.use(morgan('dev'));
 // Your Routes
 app.use('/api/v1/green-initiatives', greenInitiativeRoutes);
 app.use('/api/v1/issues', issueRoutes);
+app.use('/api/v1/surveys', surveyRoutes);
 
 app.get('/health', (req, res) => {
     res.status(200).json({ status: 'success', message: 'Server is healthy' });
