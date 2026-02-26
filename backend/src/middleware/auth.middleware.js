@@ -6,18 +6,13 @@ import { asyncHandler } from '../utils/asyncHandler.js';
 export const protect = asyncHandler(async (req, res, next) => {
   let token;
 
-  // Check Authorization header first (Bearer token)
+  // Only accept explicit Bearer token — no cookie fallback
   if (req.headers.authorization && req.headers.authorization.startsWith('Bearer')) {
     token = req.headers.authorization.split(' ')[1];
   }
 
-  // Fallback: check httpOnly cookie (matches acquisitions service)
-  if (!token && req.cookies?.token) {
-    token = req.cookies.token;
-  }
-
   if (!token) {
-    return next(new AppError('Not authorized to access this route', 401));
+    return next(new AppError('No token provided. Use Authorization: Bearer <token>', 401));
   }
 
   try {
@@ -38,7 +33,7 @@ export const protect = asyncHandler(async (req, res, next) => {
 
     next();
   } catch (error) {
-    return next(new AppError('Not authorized to access this route', 401));
+    return next(new AppError('Invalid or expired token', 401));
   }
 });
 
