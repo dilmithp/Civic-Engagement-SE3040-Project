@@ -7,6 +7,7 @@ import { CORS_ORIGIN } from './config/env.js';
 import issueRoutes from './routes/issue.routes.js';
 import marketplaceRoutes from './routes/marketplace.routes.js';
 import surveyRoutes from './routes/survey.routes.js';
+import geocodingRoutes from './routes/geocoding.routes.js';
 
 const app = express();
 
@@ -20,6 +21,7 @@ app.use('/api/v1/green-initiatives', greenInitiativeRoutes);
 app.use('/api/v1/issues', issueRoutes);
 app.use('/api/marketplace', marketplaceRoutes);
 app.use('/api/v1/surveys', surveyRoutes);
+app.use('/api/v1/geocode', geocodingRoutes);
 
 app.get('/health', (req, res) => {
     res.status(200).json({ status: 'success', message: 'Server is healthy' });
