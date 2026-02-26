@@ -9,18 +9,19 @@ import { sendSuccess } from '../utils/response.js';
 
 /**
  * @desc    Create a new marketplace listing
- * @route   POST /api/marketplace
+ * @route   POST /api/v1/marketplace
  * @access  Private (authenticated users)
  */
 export const createListing = asyncHandler(async (req, res) => {
-    const listing = await MarketplaceService.createListing(req.body, req.user.id);
+    const userId = req.user.id || req.user._id;
+    const listing = await MarketplaceService.createListing(req.body, userId);
 
     sendSuccess(res, 201, listing, 'Listing created successfully');
 });
 
 /**
  * @desc    Get all marketplace listings (with filters and pagination)
- * @route   GET /api/marketplace
+ * @route   GET /api/v1/marketplace
  * @access  Public
  */
 export const getAllListings = asyncHandler(async (req, res) => {
@@ -31,7 +32,7 @@ export const getAllListings = asyncHandler(async (req, res) => {
 
 /**
  * @desc    Get a single marketplace listing by ID
- * @route   GET /api/marketplace/:id
+ * @route   GET /api/v1/marketplace/:id
  * @access  Public
  */
 export const getListingById = asyncHandler(async (req, res) => {
@@ -42,7 +43,7 @@ export const getListingById = asyncHandler(async (req, res) => {
 
 /**
  * @desc    Update a marketplace listing
- * @route   PATCH /api/marketplace/:id
+ * @route   PATCH /api/v1/marketplace/:id
  * @access  Private (owner or admin)
  */
 export const updateListing = asyncHandler(async (req, res) => {
@@ -57,7 +58,7 @@ export const updateListing = asyncHandler(async (req, res) => {
 
 /**
  * @desc    Update listing status
- * @route   PATCH /api/marketplace/:id/status
+ * @route   PATCH /api/v1/marketplace/:id/status
  * @access  Private (owner or admin)
  */
 export const updateListingStatus = asyncHandler(async (req, res) => {
@@ -72,7 +73,7 @@ export const updateListingStatus = asyncHandler(async (req, res) => {
 
 /**
  * @desc    Delete a marketplace listing
- * @route   DELETE /api/marketplace/:id
+ * @route   DELETE /api/v1/marketplace/:id
  * @access  Private (owner or admin)
  */
 export const deleteListing = asyncHandler(async (req, res) => {
