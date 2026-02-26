@@ -74,10 +74,7 @@ class IssueService {
      * @throws {AppError} If issue not found
      */
     static async getIssueById(issueId) {
-        const issue = await Issue.findById(issueId)
-            .populate('reporter', 'name email')
-            .populate('statusHistory.changedBy', 'name')
-            .populate('comments.user', 'name');
+        const issue = await Issue.findById(issueId);
 
         if (!issue) {
             throw new AppError('Issue not found', 404);
@@ -102,8 +99,8 @@ class IssueService {
         const options = {
             page: parseInt(page),
             limit: parseInt(limit),
-            sort: { createdAt: -1 },
-            populate: { path: 'reporter', select: 'name email' }
+            sort: { createdAt: -1 }
+            // populate removed (reporter = postgres ID)
         };
 
         return Issue.paginate(filter, options);
@@ -142,8 +139,8 @@ class IssueService {
             page: parseInt(page),
             limit: parseInt(limit),
             sort: { createdAt: -1 },
-            populate: { path: 'reporter', select: 'name' },
             select: '-statusHistory' // Exclude audit trail from public feed
+            // populate removed (reporter = postgres ID)
         };
 
         return Issue.paginate(filter, options);
