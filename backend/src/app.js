@@ -3,6 +3,7 @@ import cors from 'cors';
 import morgan from 'morgan';
 import { errorMiddleware } from './middleware/error.middleware.js';
 import { CORS_ORIGIN } from './config/env.js';
+import authRoutes from './routes/auth.routes.js';
 import issueRoutes from './routes/issue.routes.js';
 import geocodingRoutes from './routes/geocoding.routes.js';
 
@@ -23,6 +24,7 @@ app.get('/health', (req, res) => {
 });
 
 // API Routes
+app.use('/api/v1/auth', authRoutes);
 app.use('/api/v1/issues', issueRoutes);
 app.use('/api/v1/geocode', geocodingRoutes);
 
