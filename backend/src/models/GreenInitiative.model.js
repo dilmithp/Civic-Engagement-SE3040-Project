@@ -26,14 +26,14 @@ const greenInitiativeSchema = new mongoose.Schema(
             enum: ['Upcoming', 'Ongoing', 'Completed'],
             default: 'Upcoming'
         },
-        // Changed from ObjectId to Number to match your friend's SQL database
+        // Changed back to String to match the new PostgreSQL IDs from Login API
         organizer: {
-            type: Number,
+            type: String,
             required: true
         },
         participants: [
             {
-                type: Number
+                type: String
             }
         ]
     },

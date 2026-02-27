@@ -6,8 +6,7 @@ import {
     updateInitiative,
     deleteInitiative
 } from '../controllers/greenInitiative.controller.js';
-import { protect } from '../middleware/auth.middleware.js'; // Adjust if auth middleware is exported differently
-
+import { protect } from '../middleware/auth.middleware.js';
 const router = express.Router();
 
 router.route('/')

@@ -6,26 +6,34 @@ import { asyncHandler } from '../utils/asyncHandler.js';
 export const protect = asyncHandler(async (req, res, next) => {
     let token;
 
-    // Check Authorization header first (Bearer token)
+    // Only accept explicit Bearer token — no cookie fallback
     if (req.headers.authorization && req.headers.authorization.startsWith('Bearer')) {
         token = req.headers.authorization.split(' ')[1];
     }
 
-    // Fallback: check httpOnly cookie (matches acquisitions service)
-    if (!token && req.cookies?.token) {
-        token = req.cookies.token;
-    }
-
     if (!token) {
-        return next(new AppError('Not authorized to access this route', 401));
+        return next(new AppError('No token provided. Use Authorization: Bearer <token>', 401));
     }
 
     try {
-        const decoded = jwt.verify(token, JWT_SECRET);
-        req.user = decoded;
+        // Verify with HS256 only — must match acquisitions signing algorithm
+        const decoded = jwt.verify(token, JWT_SECRET, { algorithms: ['HS256'] });
+
+        // Validate token has required fields from acquisitions JWT
+        if (!decoded.id || !decoded.role) {
+            return next(new AppError('Invalid token structure', 401));
+        }
+
+        // Coerce id to string for MongoDB compatibility
+        req.user = {
+            id: String(decoded.id),
+            email: decoded.email,
+            role: decoded.role
+        };
+
         next();
     } catch (error) {
-        return next(new AppError('Not authorized to access this route', 401));
+        return next(new AppError('Invalid or expired token', 401));
     }
 });
 

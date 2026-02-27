@@ -7,7 +7,7 @@ import { sendSuccess } from '../utils/response.js';
 // @route   POST /api/v1/green-initiatives
 // @access  Private
 export const createInitiative = asyncHandler(async (req, res, next) => {
-    req.body.organizer = req.user.id; // Will now save as Number 19
+    req.body.organizer = req.user.id; // Will save as String Postgres ID
 
     const initiative = await GreenInitiative.create(req.body);
 
@@ -51,11 +51,10 @@ export const updateInitiative = asyncHandler(async (req, res, next) => {
         return next(new AppError('Initiative not found', 404));
     }
 
-    // DEBUG ERROR MESSAGE: This will print the IDs to Postman!
-    if (String(initiative.organizer) !== String(req.user.id) && req.user.role !== 'admin') {
+    if (initiative.organizer !== req.user.id && req.user.role !== 'admin') {
         return res.status(403).json({
             status: 'fail',
-            message: `DEBUG MISMATCH: Database saved organizer as '${initiative.organizer}', but your token says you are '${req.user.id}'.`
+            message: 'Not authorized to update this initiative'
         });
     }
 
@@ -77,7 +76,7 @@ export const deleteInitiative = asyncHandler(async (req, res, next) => {
         return next(new AppError('Initiative not found', 404));
     }
 
-    if (String(initiative.organizer) !== String(req.user.id) && req.user.role !== 'admin') {
+    if (initiative.organizer !== req.user.id && req.user.role !== 'admin') {
         return next(new AppError('Not authorized to delete this initiative', 403));
     }
 
