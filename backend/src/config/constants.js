@@ -1,7 +1,7 @@
 export const ROLES = {
-  ADMIN: 'admin',
-  USER: 'user',
-  MODERATOR: 'moderator'
+  CITIZEN: 'citizen',
+  OFFICIAL: 'official',
+  ADMIN: 'admin'
 };
 
 export const STATUS_CODES = {

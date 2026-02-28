@@ -11,8 +11,7 @@ const statusHistorySchema = new mongoose.Schema(
             required: true
         },
         changedBy: {
-            type: mongoose.Schema.Types.ObjectId,
-            ref: 'User',
+            type: String,
             required: true
         },
         comment: {
@@ -32,8 +31,7 @@ const statusHistorySchema = new mongoose.Schema(
 const commentSchema = new mongoose.Schema(
     {
         user: {
-            type: mongoose.Schema.Types.ObjectId,
-            ref: 'User',
+            type: String,
             required: true
         },
         text: {
@@ -127,8 +125,7 @@ const issueSchema = new mongoose.Schema(
             default: []
         },
         reporter: {
-            type: mongoose.Schema.Types.ObjectId,
-            ref: 'User',
+            type: String,
             required: [true, 'Reporter is required']
         },
         statusHistory: {
