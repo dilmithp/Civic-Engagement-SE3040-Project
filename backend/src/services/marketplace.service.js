@@ -2,6 +2,17 @@ import Marketplace from '../models/Marketplace.model.js';
 import AppError from '../utils/AppError.js';
 
 /**
+ * Valid status transitions for marketplace listings.
+ * Maps current status → allowed next statuses.
+ */
+const STATUS_TRANSITIONS = {
+    available: ['reserved', 'sold', 'expired'],
+    reserved: ['available', 'sold', 'expired'],
+    sold: [],        // Final state — no further transitions allowed
+    expired: []      // Final state — no further transitions allowed
+};
+
+/**
  * MarketplaceService — Business logic for the circular economy marketplace.
  */
 class MarketplaceService {
@@ -13,6 +24,21 @@ class MarketplaceService {
      */
     static async createListing(data, userId) {
         const { title, description, category, type, price, images, contactInfo, expiresAt } = data;
+
+        // Validate sale listings must have a price
+        if (type === 'sale' && (price === undefined || price === null)) {
+            throw new AppError('Price is required for sale listings. Please provide a valid price.', 400);
+        }
+
+        // Validate price is not set for donations
+        if (type === 'donation' && price !== undefined && price !== null && price > 0) {
+            throw new AppError('Donation listings cannot have a price. Set type to "sale" or remove the price.', 400);
+        }
+
+        // Validate expiry date is in the future
+        if (expiresAt && new Date(expiresAt) <= new Date()) {
+            throw new AppError('Expiry date must be in the future. Please provide a valid future date.', 400);
+        }
 
         const listing = await Marketplace.create({
             title,
@@ -38,6 +64,30 @@ class MarketplaceService {
     static async getAllListings(queryParams = {}) {
         const { page = 1, limit = 10, category, type, status } = queryParams;
 
+        // Validate pagination parameters
+        const pageNum = parseInt(page);
+        const limitNum = parseInt(limit);
+
+        if (isNaN(pageNum) || pageNum < 1) {
+            throw new AppError('Invalid page number. Page must be a positive integer.', 400);
+        }
+        if (isNaN(limitNum) || limitNum < 1 || limitNum > 100) {
+            throw new AppError('Invalid limit. Limit must be between 1 and 100.', 400);
+        }
+
+        // Validate type filter if provided
+        if (type && !['donation', 'sale'].includes(type)) {
+            throw new AppError(`Invalid type filter "${type}". Allowed values: donation, sale.`, 400);
+        }
+
+        // Validate status filter if provided
+        if (status && !['available', 'reserved', 'sold', 'expired'].includes(status)) {
+            throw new AppError(
+                `Invalid status filter "${status}". Allowed values: available, reserved, sold, expired.`,
+                400
+            );
+        }
+
         // Mark expired listings before querying
         await Marketplace.updateMany(
             { expiresAt: { $lt: new Date() }, status: { $ne: 'expired' } },
@@ -49,23 +99,32 @@ class MarketplaceService {
         if (type) filter.type = type;
         if (status) filter.status = status;
 
-        const skip = (parseInt(page) - 1) * parseInt(limit);
+        const skip = (pageNum - 1) * limitNum;
 
         const [listings, total] = await Promise.all([
             Marketplace.find(filter)
                 .populate('owner', 'name email')
                 .sort({ createdAt: -1 })
                 .skip(skip)
-                .limit(parseInt(limit)),
+                .limit(limitNum),
             Marketplace.countDocuments(filter)
         ]);
+
+        const totalPages = Math.ceil(total / limitNum);
+
+        if (pageNum > totalPages && total > 0) {
+            throw new AppError(
+                `Page ${pageNum} does not exist. There are only ${totalPages} page(s) available.`,
+                400
+            );
+        }
 
         return {
             listings,
             total,
-            page: parseInt(page),
-            limit: parseInt(limit),
-            totalPages: Math.ceil(total / parseInt(limit))
+            page: pageNum,
+            limit: limitNum,
+            totalPages
         };
     }
 
@@ -85,7 +144,7 @@ class MarketplaceService {
         const listing = await Marketplace.findById(id).populate('owner', 'name email');
 
         if (!listing) {
-            throw new AppError('Listing not found', 404);
+            throw new AppError(`Marketplace listing with ID "${id}" was not found. It may have been deleted.`, 404);
         }
 
         return listing;
@@ -103,16 +162,44 @@ class MarketplaceService {
         const listing = await Marketplace.findById(id);
 
         if (!listing) {
-            throw new AppError('Listing not found', 404);
+            throw new AppError(`Marketplace listing with ID "${id}" was not found. It may have been deleted.`, 404);
+        }
+
+        // Check if listing is expired or sold
+        if (listing.status === 'expired') {
+            throw new AppError('Cannot update an expired listing. Please create a new listing instead.', 400);
+        }
+        if (listing.status === 'sold') {
+            throw new AppError('Cannot update a listing that has already been sold.', 400);
         }
 
         const userId = user.id || user._id;
         if (listing.owner.toString() !== userId && user.role !== 'admin') {
-            throw new AppError('You are not authorized to update this listing', 403);
+            throw new AppError(
+                'You are not authorized to update this listing. Only the listing owner or an admin can make changes.',
+                403
+            );
         }
 
         // Prevent updating restricted fields
         const { owner, status, ...allowedUpdates } = updateData;
+
+        // Warn if user tried to change restricted fields
+        if (updateData.owner) {
+            throw new AppError('Cannot change the owner of a listing. This field is read-only.', 400);
+        }
+        if (updateData.status) {
+            throw new AppError(
+                'Cannot change status through this endpoint. Use PATCH /api/v1/marketplace/:id/status instead.',
+                400
+            );
+        }
+
+        // Validate type/price consistency on update
+        const effectiveType = allowedUpdates.type || listing.type;
+        if (effectiveType === 'sale' && allowedUpdates.price === undefined && !listing.price) {
+            throw new AppError('Price is required when listing type is "sale". Please provide a price.', 400);
+        }
 
         const updated = await Marketplace.findByIdAndUpdate(id, allowedUpdates, {
             new: true,
@@ -125,24 +212,49 @@ class MarketplaceService {
     /**
      * Update listing status (owner or admin only).
      * @param {string} id - Listing ID
-     * @param {string} status - New status value
+     * @param {string} newStatus - New status value
      * @param {object} user - Authenticated user { id, role }
      * @returns {Promise<object>} Updated listing
-     * @throws {AppError} If not found or not authorized
+     * @throws {AppError} If not found, not authorized, or invalid transition
      */
-    static async updateListingStatus(id, status, user) {
+    static async updateListingStatus(id, newStatus, user) {
+        if (!newStatus) {
+            throw new AppError('Status is required. Allowed values: available, reserved, sold, expired.', 400);
+        }
+
         const listing = await Marketplace.findById(id);
 
         if (!listing) {
-            throw new AppError('Listing not found', 404);
+            throw new AppError(`Marketplace listing with ID "${id}" was not found. It may have been deleted.`, 404);
         }
 
         const userId = user.id || user._id;
         if (listing.owner.toString() !== userId && user.role !== 'admin') {
-            throw new AppError('You are not authorized to change the status of this listing', 403);
+            throw new AppError(
+                'You are not authorized to change the status of this listing. Only the listing owner or an admin can update status.',
+                403
+            );
         }
 
-        listing.status = status;
+        // Validate status transition
+        const currentStatus = listing.status;
+        const allowedTransitions = STATUS_TRANSITIONS[currentStatus] || [];
+
+        if (currentStatus === newStatus) {
+            throw new AppError(`Listing is already in "${currentStatus}" status. No change needed.`, 400);
+        }
+
+        if (!allowedTransitions.includes(newStatus)) {
+            throw new AppError(
+                `Cannot change status from "${currentStatus}" to "${newStatus}". ` +
+                (allowedTransitions.length > 0
+                    ? `Allowed transitions from "${currentStatus}": ${allowedTransitions.join(', ')}.`
+                    : `Listings with "${currentStatus}" status cannot be changed.`),
+                400
+            );
+        }
+
+        listing.status = newStatus;
         await listing.save();
 
         await listing.populate('owner', 'name email');
@@ -161,12 +273,15 @@ class MarketplaceService {
         const listing = await Marketplace.findById(id);
 
         if (!listing) {
-            throw new AppError('Listing not found', 404);
+            throw new AppError(`Marketplace listing with ID "${id}" was not found. It may have already been deleted.`, 404);
         }
 
         const userId = user.id || user._id;
         if (listing.owner.toString() !== userId && user.role !== 'admin') {
-            throw new AppError('You are not authorized to delete this listing', 403);
+            throw new AppError(
+                'You are not authorized to delete this listing. Only the listing owner or an admin can delete it.',
+                403
+            );
         }
 
         await Marketplace.findByIdAndDelete(id);
