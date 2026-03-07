@@ -26,7 +26,11 @@ const greenInitiativeSchema = new mongoose.Schema(
             enum: ['Upcoming', 'Ongoing', 'Completed'],
             default: 'Upcoming'
         },
-        // Changed back to String to match the new PostgreSQL IDs from Login API
+        // NEW: Flag to indicate if this is an officially endorsed event
+        isOfficial: {
+            type: Boolean,
+            default: false
+        },
         organizer: {
             type: String,
             required: true
