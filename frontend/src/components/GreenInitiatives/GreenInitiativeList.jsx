@@ -7,7 +7,7 @@ const GreenInitiativeList = () => {
     const [initiatives, setInitiatives] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
-     const [deleteTarget, setDeleteTarget] = useState(null); // { id, title }
+    const [deleteTarget, setDeleteTarget] = useState(null); // { id, title }
     const [deleting, setDeleting] = useState(false);
     const { user } = useAuth();
 
@@ -189,7 +189,9 @@ const GreenInitiativeList = () => {
                 ) : (
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                         {initiatives.map((initiative) => {
-                            const isOwner = user && (user.id === initiative.organizer || user._id === initiative.organizer);
+                            // NEW: Check if user owns the post OR if the user is an admin!
+                            const canEditOrDelete = user && (user.id === initiative.organizer || user._id === initiative.organizer || user.role === 'admin');
+
                             return (
                                 <div key={initiative._id} className="bg-white rounded-2xl shadow-sm hover:shadow-md border border-gray-100 flex flex-col overflow-hidden transition-shadow duration-200 group">
                                     {/* Accent top bar */}
@@ -197,9 +199,23 @@ const GreenInitiativeList = () => {
 
                                     <div className="p-6 flex-grow">
                                         <div className="flex justify-between items-start gap-3 mb-3">
-                                            <h2 className="text-lg font-bold text-gray-900 leading-snug line-clamp-2 group-hover:text-green-700 transition-colors">
-                                                {initiative.title}
-                                            </h2>
+
+                                            <div className="flex flex-col gap-2">
+                                                <h2 className="text-lg font-bold text-gray-900 leading-snug line-clamp-2 group-hover:text-green-700 transition-colors">
+                                                    {initiative.title}
+                                                </h2>
+
+                                                {/* THE OFFICIAL VERIFIED BADGE */}
+                                                {initiative.isOfficial && (
+                                                    <span className="inline-flex w-max items-center gap-1 px-2.5 py-0.5 rounded-md text-[10px] font-bold bg-blue-50 text-blue-700 border border-blue-200">
+                                                        <svg className="w-3 h-3 text-blue-600" fill="currentColor" viewBox="0 0 20 20">
+                                                            <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                                                        </svg>
+                                                        City Endorsed
+                                                    </span>
+                                                )}
+                                            </div>
+
                                             <span className={`shrink-0 px-2.5 py-1 rounded-full text-xs font-semibold ${getStatusStyle(initiative.status)}`}>
                                                 {initiative.status}
                                             </span>
@@ -231,7 +247,8 @@ const GreenInitiativeList = () => {
                                             <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M9 5l7 7-7 7" /></svg>
                                         </Link>
 
-                                        {isOwner && (
+                                        {/* NEW: Replaced isOwner with canEditOrDelete */}
+                                        {canEditOrDelete && (
                                             <div className="flex items-center gap-1">
                                                 <Link
                                                     to={`/green-initiatives/edit/${initiative._id}`}
@@ -261,4 +278,3 @@ const GreenInitiativeList = () => {
 };
 
 export default GreenInitiativeList;
-

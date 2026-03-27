@@ -27,6 +27,10 @@ const greenInitiativeSchema = new mongoose.Schema(
             default: 'Upcoming'
         },
         // Changed from ObjectId to Number to match your friend's SQL database
+        isOfficial: {
+            type: Boolean,
+            default: false
+        },
         organizer: {
             type: Number,
             required: true

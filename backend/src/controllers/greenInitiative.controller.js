@@ -9,6 +9,13 @@ import { sendSuccess } from '../utils/response.js';
 export const createInitiative = asyncHandler(async (req, res, next) => {
     req.body.organizer = req.user.id; // Will now save as Number 19
 
+    if (req.user.role === 'official' || req.user.role === 'admin') {
+        req.body.isOfficial = true;
+    } else {
+        // Prevent normal citizens from hacking the body payload
+        req.body.isOfficial = false;
+    }
+
     const initiative = await GreenInitiative.create(req.body);
 
     sendSuccess(res, 201, initiative, 'Initiative created successfully');
@@ -57,6 +64,9 @@ export const updateInitiative = asyncHandler(async (req, res, next) => {
             status: 'fail',
             message: `DEBUG MISMATCH: Database saved organizer as '${initiative.organizer}', but your token says you are '${req.user.id}'.`
         });
+    }
+    if (req.user.role !== 'official' && req.user.role !== 'admin') {
+        delete req.body.isOfficial;
     }
 
     initiative = await GreenInitiative.findByIdAndUpdate(req.params.id, req.body, {
