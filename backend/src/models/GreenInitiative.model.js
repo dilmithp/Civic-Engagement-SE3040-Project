@@ -26,24 +26,52 @@ const greenInitiativeSchema = new mongoose.Schema(
             enum: ['Upcoming', 'Ongoing', 'Completed'],
             default: 'Upcoming'
         },
-        // Changed from ObjectId to Number to match your friend's SQL database
+     // Changed from ObjectId to Number to match your friend's SQL database
+    isOfficial: {
+        type: Boolean,
+        default: false
+    },
+    organizer: {
+        type: Number,
+        required: false
+    },
+    // Store the weather forecast snapshot for the event day
+    weatherForecast: {
+        temp: {
+            type: Number,
+            required: false
+        },
+            type: Number,
+            required: false 
+        },
+        condition: {
+            type: String,
+            required: false // e.g., "Rain", "Clear", "Clouds"
+        },
+        description: {
+            type: String,
+            required: false // e.g., "light rain", "few clouds"
+        }
+    },
+        // NEW: Flag to indicate if this is an officially endorsed event
         isOfficial: {
             type: Boolean,
             default: false
         },
         organizer: {
-            type: Number,
+            type: String,
             required: true
         },
         participants: [
             {
-                type: Number
+                type: String
             }
         ]
     },
     {
         timestamps: true
     }
+
 );
 
 const GreenInitiative = mongoose.model('GreenInitiative', greenInitiativeSchema);

@@ -2,9 +2,11 @@ import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import greenInitiativeService from '../../services/greenInitiative.service';
 
+// 1. Added Amber/Orange colors for the new Weather Alert status
 const statusStyle = (status) => {
     switch (status) {
         case 'Upcoming':  return 'bg-sky-100 text-sky-700 ring-1 ring-sky-200';
+        case 'Upcoming (Weather Alert)': return 'bg-amber-100 text-amber-800 ring-1 ring-amber-300';
         case 'Ongoing':   return 'bg-emerald-100 text-emerald-700 ring-1 ring-emerald-200';
         case 'Completed': return 'bg-slate-100 text-slate-600 ring-1 ring-slate-200';
         default:          return 'bg-slate-100 text-slate-600 ring-1 ring-slate-200';
@@ -14,9 +16,24 @@ const statusStyle = (status) => {
 const accentBar = (status) => {
     switch (status) {
         case 'Upcoming':  return 'from-sky-400 to-sky-500';
+        case 'Upcoming (Weather Alert)': return 'from-amber-400 to-orange-500';
         case 'Ongoing':   return 'from-emerald-400 to-green-600';
         case 'Completed': return 'from-slate-300 to-slate-400';
         default:          return 'from-green-400 to-green-600';
+    }
+};
+
+// Helper function to turn OpenWeatherMap conditions into emojis
+const getWeatherIcon = (condition) => {
+    switch(condition) {
+        case 'Clear': return '☀️';
+        case 'Clouds': return '☁️';
+        case 'Rain': return '🌧️';
+        case 'Drizzle': return '🌦️';
+        case 'Thunderstorm': return '⛈️';
+        case 'Snow': return '❄️';
+        case 'Extreme': return '🌪️';
+        default: return '🌤️';
     }
 };
 
@@ -94,13 +111,22 @@ const InitiativeDetails = () => {
                     {/* Title section */}
                     <div className="px-8 pt-8 pb-6 border-b border-gray-100">
                         <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
-                            <div className="flex items-start gap-3">
-                                <div className="w-11 h-11 rounded-xl bg-green-100 flex items-center justify-center shrink-0 mt-0.5">
-                                    <span className="text-xl">🌿</span>
+                            <div className="flex flex-col gap-2">
+                                <div className="flex items-start gap-3">
+                                    <div className="w-11 h-11 rounded-xl bg-green-100 flex items-center justify-center shrink-0 mt-0.5">
+                                        <span className="text-xl">🌿</span>
+                                    </div>
+                                    <h1 className="text-2xl font-extrabold text-gray-900 tracking-tight leading-snug flex items-center flex-wrap gap-2">
+                                        {initiative.title}
+                                        {/* 2. Official Badge */}
+                                        {initiative.isOfficial && (
+                                            <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-bold bg-blue-50 text-blue-600 border border-blue-200">
+                                                <svg className="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd"/></svg>
+                                                Official
+                                            </span>
+                                        )}
+                                    </h1>
                                 </div>
-                                <h1 className="text-2xl font-extrabold text-gray-900 tracking-tight leading-snug">
-                                    {initiative.title}
-                                </h1>
                             </div>
                             <span className={`shrink-0 self-start px-3 py-1.5 rounded-full text-xs font-bold ${statusStyle(initiative.status)}`}>
                                 {initiative.status}
@@ -109,14 +135,29 @@ const InitiativeDetails = () => {
                     </div>
 
                     <div className="px-8 py-8 space-y-8">
+                        {/* 3. Weather Alert Banner */}
+                        {initiative.status === 'Upcoming (Weather Alert)' && initiative.weatherForecast && (
+                            <div className="bg-amber-50 border-l-4 border-amber-500 p-4 rounded-r-lg flex items-start gap-3">
+                                <div className="shrink-0 mt-0.5">
+                                    ⚠️
+                                </div>
+                                <div>
+                                    <h3 className="text-sm font-bold text-amber-800">Weather Advisory</h3>
+                                    <p className="text-sm text-amber-700 mt-1">
+                                        There is a forecast for <strong>{initiative.weatherForecast.condition.toLowerCase()}</strong> ({initiative.weatherForecast.description}) during this event. Please dress appropriately and stay safe!
+                                    </p>
+                                </div>
+                            </div>
+                        )}
+
                         {/* Description */}
                         <div>
                             <h3 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3">About this Initiative</h3>
                             <p className="text-gray-700 leading-relaxed text-sm">{initiative.description}</p>
                         </div>
 
-                        {/* Metadata cards */}
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        {/* Metadata cards - Updated to a 3-column grid on large screens */}
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                             <div className="flex items-start gap-3 p-4 bg-gray-50 border border-gray-100 rounded-xl">
                                 <div className="w-9 h-9 rounded-lg bg-green-100 flex items-center justify-center shrink-0">
                                     <svg className="w-4.5 h-4.5 w-4 h-4 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
@@ -135,12 +176,27 @@ const InitiativeDetails = () => {
                                     <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-0.5">Date &amp; Time</p>
                                     <p className="text-gray-900 font-semibold text-sm">
                                         {new Date(initiative.date).toLocaleString('en-US', {
-                                            weekday: 'short', year: 'numeric', month: 'long',
-                                            day: 'numeric', hour: '2-digit', minute: '2-digit'
+                                            weekday: 'short', month: 'short', day: 'numeric',
+                                            hour: '2-digit', minute: '2-digit'
                                         })}
                                     </p>
                                 </div>
                             </div>
+
+                            {/* 4. The New Weather Card */}
+                            {initiative.weatherForecast && (
+                                <div className="flex items-start gap-3 p-4 bg-sky-50 border border-sky-100 rounded-xl sm:col-span-2 lg:col-span-1">
+                                    <div className="w-9 h-9 rounded-lg bg-sky-200 flex items-center justify-center shrink-0 text-lg">
+                                        {getWeatherIcon(initiative.weatherForecast.condition)}
+                                    </div>
+                                    <div>
+                                        <p className="text-xs font-bold text-sky-600 uppercase tracking-wider mb-0.5">Forecast</p>
+                                        <p className="text-gray-900 font-semibold text-sm capitalize">
+                                            {Math.round(initiative.weatherForecast.temp)}°C, {initiative.weatherForecast.description}
+                                        </p>
+                                    </div>
+                                </div>
+                            )}
                         </div>
 
                         {/* Footer action */}
@@ -161,4 +217,3 @@ const InitiativeDetails = () => {
 };
 
 export default InitiativeDetails;
-
