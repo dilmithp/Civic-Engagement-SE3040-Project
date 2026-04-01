@@ -122,7 +122,7 @@ export const deleteInitiative = asyncHandler(async (req, res, next) => {
     }
 
     // SCENARIO 1: Admin God Mode. Admins bypass the organizer check.
-    if (initiative.organizer !== req.user.id && req.user.role !== 'admin') {
+    if (initiative.organizer.toString() !== req.user.id.toString() && req.user.role !== 'admin') {
         return next(new AppError('Not authorized to delete this initiative', 403));
     }
 
