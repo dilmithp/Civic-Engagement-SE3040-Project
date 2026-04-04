@@ -21,7 +21,8 @@ const swaggerDocument = YAML.load(path.join(__dirname, '../swagger.yaml'));
 
 const app = express();
 
-app.use(cors({ origin: CORS_ORIGIN, credentials: true }));
+const allowedOrigins = CORS_ORIGIN.split(',').map(origin => origin.trim());
+app.use(cors({ origin: allowedOrigins, credentials: true }));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(morgan('dev'));
