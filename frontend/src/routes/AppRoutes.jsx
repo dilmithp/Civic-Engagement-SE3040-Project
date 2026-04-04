@@ -6,6 +6,8 @@ import Register from '../pages/Register';
 import Home from '../pages/Home';
 import Dashboard from '../pages/Dashboard';
 import Unauthorized from '../pages/Unauthorized';
+import DashboardLayout from '../components/layout/DashboardLayout';
+import Surveys from '../pages/dashboard/Surveys';
 
 // Team members will import their page components here
 
@@ -17,15 +19,18 @@ const AppRoutes = () => {
       <Route path="/register" element={<Register />} />
       <Route path="/unauthorized" element={<Unauthorized />} />
 
-      {/* Protected dashboard route */}
+      {/* Protected dashboard routes */}
       <Route 
         path="/dashboard" 
         element={
           <ProtectedRoute>
-            <Dashboard />
+            <DashboardLayout />
           </ProtectedRoute>
-        } 
-      />
+        }
+      >
+        <Route index element={<Dashboard />} />
+        <Route path="surveys" element={<Surveys />} />
+      </Route>
 
       {/* Team members will add their routes here */}
     </Routes>

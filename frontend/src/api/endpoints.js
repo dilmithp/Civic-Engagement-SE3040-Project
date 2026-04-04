@@ -5,4 +5,8 @@ export const ENDPOINTS = {
     REGISTER: '/sign-up',
     LOGOUT: '/sign-out'
   },
+  SURVEYS: {
+    GET_ACTIVE: '/surveys/active',
+    BASE: '/surveys'
+  }
 };
