@@ -9,15 +9,16 @@ import Unauthorized from '../pages/Unauthorized';
 import DashboardLayout from '../components/layout/DashboardLayout';
 import Surveys from '../pages/dashboard/Surveys';
 
-// Team members will import their page components here
+import GreenInitiativeList from '../components/GreenInitiatives/GreenInitiativeList';
+import CreateInitiativeForm from '../components/GreenInitiatives/CreateInitiativeForm';
+import EditInitiativeForm from '../components/GreenInitiatives/EditInitiativeForm';
+import InitiativeDetails from '../components/GreenInitiatives/InitiativeDetails';
 
 const AppRoutes = () => {
   return (
     <Routes>
-      <Route path="/" element={<Home />} />
-      <Route path="/login" element={<Login />} />
-      <Route path="/register" element={<Register />} />
-      <Route path="/unauthorized" element={<Unauthorized />} />
+      <Route path="/" element={<div>Home Page</div>} />
+      <Route path="/login" element={<div>Login Page</div>} />
 
       {/* Protected dashboard routes */}
       <Route 
@@ -32,9 +33,17 @@ const AppRoutes = () => {
         <Route path="surveys" element={<Surveys />} />
       </Route>
 
+      <Route
+  path="/green-initiatives/create"
+  element={<ProtectedRoute><CreateInitiativeForm /></ProtectedRoute>}
+/>
+<Route
+  path="/green-initiatives/edit/:id"
+  element={<ProtectedRoute><EditInitiativeForm /></ProtectedRoute>}
+/>
+
       {/* Team members will add their routes here */}
     </Routes>
   );
 };
-
 export default AppRoutes;
