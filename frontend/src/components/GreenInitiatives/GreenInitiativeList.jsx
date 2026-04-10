@@ -164,7 +164,7 @@ const GreenInitiativeList = () => {
                             <p className="text-gray-500 text-sm mt-1">Browse and join community-led environmental events.</p>
                         </div>
                         <Link
-                            to="/green-initiatives/create"
+                            to="/dashboard/initiatives/create"
                             className="inline-flex items-center gap-2 bg-green-600 hover:bg-green-700 active:bg-green-800 text-white font-semibold py-2.5 px-5 rounded-xl shadow-md hover:shadow-lg transition-all duration-200 text-sm"
                         >
                             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M12 4v16m8-8H4" /></svg>
@@ -181,7 +181,7 @@ const GreenInitiativeList = () => {
                         <div className="text-5xl mb-4">🌱</div>
                         <h3 className="text-xl font-bold text-gray-700 mb-1">No initiatives yet</h3>
                         <p className="text-gray-500 mb-6">Be the first to organise a community green event.</p>
-                        <Link to="/green-initiatives/create" className="inline-flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white font-semibold py-2.5 px-6 rounded-xl shadow transition-all">
+                        <Link to="/dashboard/initiatives/create" className="inline-flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white font-semibold py-2.5 px-6 rounded-xl shadow transition-all">
                             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M12 4v16m8-8H4" /></svg>
                             Create one now
                         </Link>
@@ -240,7 +240,7 @@ const GreenInitiativeList = () => {
                                     {/* Card Footer */}
                                     <div className="px-6 py-4 bg-gray-50 border-t border-gray-100 flex justify-between items-center">
                                         <Link
-                                            to={`/green-initiatives/${initiative._id}`}
+                                            to={`/dashboard/initiatives/${initiative._id}`}
                                             className="inline-flex items-center gap-1 text-green-600 hover:text-green-800 font-semibold text-sm transition-colors"
                                         >
                                             View Details
@@ -251,7 +251,7 @@ const GreenInitiativeList = () => {
                                         {canEditOrDelete && (
                                             <div className="flex items-center gap-1">
                                                 <Link
-                                                    to={`/green-initiatives/edit/${initiative._id}`}
+                                                    to={`/dashboard/initiatives/edit/${initiative._id}`}
                                                     className="inline-flex items-center gap-1 text-xs font-semibold text-slate-600 hover:text-blue-700 hover:bg-blue-50 px-2.5 py-1.5 rounded-lg transition-all"
                                                 >
                                                     <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>
