@@ -14,6 +14,10 @@ import CreateInitiativeForm from '../components/GreenInitiatives/CreateInitiativ
 import EditInitiativeForm from '../components/GreenInitiatives/EditInitiativeForm';
 import InitiativeDetails from '../components/GreenInitiatives/InitiativeDetails';
 
+import IssueList from '../components/Issues/IssueList';
+import IssueForm from '../components/Issues/IssueForm';
+import IssueDetails from '../components/Issues/IssueDetails';
+
 const AppRoutes = () => {
   return (
     <Routes>
@@ -37,6 +41,20 @@ const AppRoutes = () => {
       >
         <Route index element={<Dashboard />} />
         <Route path="surveys" element={<Surveys />} />
+        
+        {/* Issue Reporting nested routes */}
+        <Route path="issues" element={<IssueList />} />
+        <Route path="issues/create" element={
+          <ProtectedRoute allowedRoles={['citizen']}>
+            <IssueForm />
+          </ProtectedRoute>
+        } />
+        <Route path="issues/edit/:id" element={
+          <ProtectedRoute allowedRoles={['citizen']}>
+            <IssueForm />
+          </ProtectedRoute>
+        } />
+        <Route path="issues/:id" element={<IssueDetails />} />
       </Route>
 
       {/* Protected Routes */}
