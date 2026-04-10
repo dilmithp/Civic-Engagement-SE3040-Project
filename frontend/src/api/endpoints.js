@@ -8,5 +8,6 @@ export const ENDPOINTS = {
   SURVEYS: {
     GET_ACTIVE: '/surveys/active',
     BASE: '/surveys'
-  }
+  },
+  GREEN_INITIATIVES: '/green-initiatives'
 };
