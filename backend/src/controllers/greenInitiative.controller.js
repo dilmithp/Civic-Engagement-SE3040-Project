@@ -25,6 +25,13 @@ export const createInitiative = asyncHandler(async (req, res, next) => {
             }
         }
     }
+<<<<<<< feature/green-initiatives
+
+    // Role Logic: Enforce official status based on user role
+    if (req.user.role === 'official' || req.user.role === 'admin') {
+        req.body.isOfficial = true;
+    } else {
+=======
 
     // Role Logic: Enforce official status based on user role
     if (req.user.role === 'official' || req.user.role === 'admin') {
@@ -37,6 +44,7 @@ export const createInitiative = asyncHandler(async (req, res, next) => {
         req.body.isOfficial = true;
     } else {
         // Prevent normal citizens from hacking the body payload
+>>>>>>> dev
         req.body.isOfficial = false;
     }
 
@@ -83,9 +91,12 @@ export const updateInitiative = asyncHandler(async (req, res, next) => {
             status: 'fail',
             message: `DEBUG MISMATCH: Database saved organizer as '${initiative.organizer}', but your token says you are '${req.user.id}'.`
         });
+<<<<<<< feature/green-initiatives
+=======
     }
     if (req.user.role !== 'official' && req.user.role !== 'admin') {
         delete req.body.isOfficial;
+>>>>>>> dev
     }
 
     if (req.user.role !== 'official' && req.user.role !== 'admin') {
