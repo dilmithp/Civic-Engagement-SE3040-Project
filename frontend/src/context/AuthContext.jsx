@@ -1,4 +1,5 @@
 import { createContext, useState, useEffect } from 'react';
+import { jwtDecode } from 'jwt-decode';
 
 export const AuthContext = createContext();
 
@@ -10,8 +11,17 @@ export const AuthProvider = ({ children }) => {
     // Check if user is logged in
     const token = localStorage.getItem('token');
     if (token) {
-      // Verify token and set user
-      // This will be implemented by team members
+      try {
+        const decoded = jwtDecode(token);
+        // Check if token expired
+        if (decoded.exp * 1000 < Date.now()) {
+          localStorage.removeItem('token');
+        } else {
+          setUser({ id: decoded.id, email: decoded.email, role: decoded.role });
+        }
+      } catch (error) {
+        localStorage.removeItem('token');
+      }
     }
     setLoading(false);
   }, []);

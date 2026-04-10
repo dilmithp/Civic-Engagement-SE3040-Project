@@ -2,8 +2,153 @@
 @tailwind components;
 @tailwind utilities;
 
-* {
-  margin: 0;
-  padding: 0;
-  box-sizing: border-box;
+@layer base {
+  :root {
+    --bg-color: #f8f7fc;
+    --surface-color: #ffffff;
+    --surface-hover: #f3f4f6;
+    --border-color: #e2e8f0;
+    --text-main: #1e293b;
+    --text-muted: #64748b;
+  }
+
+  .dark {
+    --bg-color: #0f0d1a;
+    --surface-color: #1a1a2e;
+    --surface-hover: #262640;
+    --border-color: #2d2d44;
+    --text-main: #f8fafc;
+    --text-muted: #94a3b8;
+  }
+
+  body {
+    @apply bg-background text-textMain transition-colors duration-200 antialiased;
+  }
+}
+
+@layer components {
+  /* Tableau-inspired component classes */
+  .card {
+    @apply bg-surface border border-border shadow-sm rounded-lg overflow-hidden transition-all duration-200;
+  }
+  
+  .card-header {
+    @apply px-5 py-4 border-b border-border flex justify-between items-center;
+  }
+
+  .card-title {
+    @apply font-semibold text-lg text-textMain;
+  }
+
+  .kpi-grid {
+    @apply grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6;
+  }
+
+  .kpi-card {
+    @apply p-5 bg-surface border border-border rounded-lg shadow-sm flex flex-col hover:border-primary-400 transition-colors;
+  }
+
+  .kpi-icon {
+    @apply w-10 h-10 rounded-full bg-primary-100 dark:bg-primary-900/30 text-primary-600 dark:text-primary-400 flex items-center justify-center mb-3;
+  }
+
+  .kpi-value {
+    @apply text-2xl font-bold text-textMain tracking-tight;
+  }
+
+  .kpi-delta {
+    @apply text-xs font-medium mt-1 flex items-center gap-1;
+  }
+
+  .table-wrapper {
+    @apply w-full overflow-x-auto;
+  }
+
+  .table-wrapper table {
+    @apply w-full text-sm text-left border-collapse;
+  }
+
+  .table-wrapper thead {
+    @apply text-xs uppercase bg-surface border-b border-border text-textMuted;
+  }
+
+  .table-wrapper th {
+    @apply px-5 py-3 font-semibold;
+  }
+
+  .table-wrapper tbody tr {
+    @apply border-b border-border hover:bg-surfaceHover transition-colors;
+  }
+
+  .table-wrapper td {
+    @apply px-5 py-3 align-middle;
+  }
+
+  .badge {
+    @apply inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium gap-1.5 border border-transparent;
+  }
+
+  .badge-purple { @apply border-purple-200 bg-purple-50 text-purple-700 dark:bg-purple-900/20 dark:border-purple-800 dark:text-purple-300; }
+  .badge-green { @apply border-emerald-200 bg-emerald-50 text-emerald-700 dark:bg-emerald-900/20 dark:border-emerald-800 dark:text-emerald-300; }
+  .badge-orange { @apply border-amber-200 bg-amber-50 text-amber-700 dark:bg-amber-900/20 dark:border-amber-800 dark:text-amber-300; }
+  .badge-red { @apply border-rose-200 bg-rose-50 text-rose-700 dark:bg-rose-900/20 dark:border-rose-800 dark:text-rose-300; }
+  .badge-blue { @apply border-blue-200 bg-blue-50 text-blue-700 dark:bg-blue-900/20 dark:border-blue-800 dark:text-blue-300; }
+  .badge-neutral { @apply border-slate-200 bg-slate-50 text-slate-700 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-300; }
+
+  .status-dot {
+    @apply w-2 h-2 rounded-full shrink-0;
+  }
+  .dot-active { @apply bg-emerald-500; }
+  .dot-pending { @apply bg-amber-500; }
+  .dot-closed { @apply bg-slate-500; }
+
+  .btn {
+    @apply inline-flex items-center justify-center font-medium rounded-lg transition-all focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed shadow-sm;
+  }
+  .btn-sm { @apply px-3 py-1.5 text-xs; }
+  .btn-default { @apply px-4 py-2 text-sm; }
+  .btn-icon { @apply p-1.5 md:p-2 aspect-square; }
+  
+  .btn-primary { 
+    @apply bg-primary-600 text-white hover:bg-primary-700 focus:ring-primary-500 border border-transparent shadow shadow-primary-500/30; 
+  }
+  .btn-secondary { 
+    @apply bg-surface text-textMain border border-border hover:bg-surfaceHover focus:ring-slate-200 dark:focus:ring-slate-700 shadow-none; 
+  }
+  .btn-ghost {
+    @apply bg-transparent text-textMuted hover:bg-surfaceHover hover:text-textMain shadow-none border border-transparent;
+  }
+
+  .form-group { @apply flex flex-col gap-1.5 mb-4; }
+  .form-group label { @apply text-sm font-semibold text-textMain; }
+  .form-group input, .form-group textarea, .form-group select {
+    @apply w-full px-3 py-2 bg-background border border-border rounded-lg text-sm transition-colors text-textMain focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none;
+  }
+
+  /* Modals */
+  .modal-backdrop {
+    @apply fixed inset-0 z-50 bg-slate-900/50 dark:bg-slate-900/80 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto;
+  }
+  .modal {
+    @apply w-full max-w-lg bg-surface border border-border shadow-xl rounded-xl overflow-hidden;
+  }
+  .modal-header {
+    @apply px-6 py-4 border-b border-border flex justify-between items-center;
+  }
+  .modal-body {
+    @apply px-6 py-4 overflow-y-auto max-h-[65vh];
+  }
+  .modal-footer {
+    @apply px-6 py-4 border-t border-border flex justify-end gap-3 bg-surfaceHover;
+  }
+
+  /* Structural wrappers */
+  .empty-state {
+    @apply flex flex-col items-center justify-center py-12 px-4 text-center rounded-lg border-2 border-dashed border-border bg-surfaceHover;
+  }
+
+  .content-grid { @apply grid gap-6; }
+  .cols-2 { @apply grid-cols-1 lg:grid-cols-2; }
+  .cols-3 { @apply grid-cols-1 md:grid-cols-2 lg:grid-cols-3; }
+  .cols-2-1 { @apply grid-cols-1 lg:grid-cols-3; } /* Custom split, children manage span */
 }

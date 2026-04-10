@@ -1,6 +1,13 @@
 import { Routes, Route } from 'react-router-dom';
 import ProtectedRoute from './ProtectedRoute';
+
 import Login from '../pages/Login';
+import Register from '../pages/Register';
+import Home from '../pages/Home';
+import Dashboard from '../pages/Dashboard';
+import Unauthorized from '../pages/Unauthorized';
+import DashboardLayout from '../components/layout/DashboardLayout';
+import Surveys from '../pages/dashboard/Surveys';
 
 import GreenInitiativeList from '../components/GreenInitiatives/GreenInitiativeList';
 import CreateInitiativeForm from '../components/GreenInitiatives/CreateInitiativeForm';
@@ -8,26 +15,35 @@ import EditInitiativeForm from '../components/GreenInitiatives/EditInitiativeFor
 import InitiativeDetails from '../components/GreenInitiatives/InitiativeDetails';
 
 const AppRoutes = () => {
-    return (
-        <Routes>
-            <Route path="/" element={<div>Home Page</div>} />
-            <Route path="/login" element={<Login />} />
+  return (
+    <Routes>
+      <Route path="/" element={<div>Home Page</div>} />
+      <Route path="/login" element={<div>Login Page</div>} />
 
-            {/* Public Routes */}
-            <Route path="/green-initiatives" element={<GreenInitiativeList />} />
-            <Route path="/green-initiatives/:id" element={<InitiativeDetails />} />
+      {/* Protected dashboard routes */}
+      <Route 
+        path="/dashboard" 
+        element={
+          <ProtectedRoute>
+            <DashboardLayout />
+          </ProtectedRoute>
+        }
+      >
+        <Route index element={<Dashboard />} />
+        <Route path="surveys" element={<Surveys />} />
+      </Route>
 
-            {/* Protected Routes */}
-            <Route
-                path="/green-initiatives/create"
-                element={<ProtectedRoute><CreateInitiativeForm /></ProtectedRoute>}
-            />
-            <Route
-                path="/green-initiatives/edit/:id"
-                element={<ProtectedRoute><EditInitiativeForm /></ProtectedRoute>}
-            />
-        </Routes>
-    );
+      <Route
+  path="/green-initiatives/create"
+  element={<ProtectedRoute><CreateInitiativeForm /></ProtectedRoute>}
+/>
+<Route
+  path="/green-initiatives/edit/:id"
+  element={<ProtectedRoute><EditInitiativeForm /></ProtectedRoute>}
+/>
 
+      {/* Team members will add their routes here */}
+    </Routes>
+  );
 };
 export default AppRoutes;
