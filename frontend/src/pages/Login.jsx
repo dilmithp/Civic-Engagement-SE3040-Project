@@ -1,119 +1,126 @@
-import React, { useState } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
-import api from '../api/axios.config';
+import React, { useState, useContext } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
+import axios from 'axios';
+import { AuthContext } from '../context/AuthContext';
 import { ENDPOINTS } from '../api/endpoints';
-import { useAuth } from '../hooks/useAuth';
+import { Lock, Mail, Loader2, AlertCircle } from 'lucide-react';
 
 const Login = () => {
-    const navigate = useNavigate();
-    const location = useLocation();
+  const [formData, setFormData] = useState({ email: '', password: '' });
+  const [error, setError] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+  const { login } = useContext(AuthContext);
+  const navigate = useNavigate();
 
-    const [formData, setFormData] = useState({ email: '', password: '' });
-    const [loading, setLoading] = useState(false);
-    const [error, setError] = useState('');
-    const { login } = useAuth();
+  const URL = `${import.meta.env.VITE_AUTH_API_URL}${ENDPOINTS.AUTH.LOGIN}`;
 
-    // If the user was redirected here from a protected page, we remember where they came from!
-    const from = location.state?.from?.pathname || "/green-initiatives";
+  const handleChange = (e) => {
+    setFormData({ ...formData, [e.target.name]: e.target.value });
+    if (error) setError('');
+  };
 
-    const handleChange = (e) => {
-        setFormData({ ...formData, [e.target.name]: e.target.value });
-    };
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setIsLoading(true);
+    setError('');
 
-    const handleSubmit = async (e) => {
-        e.preventDefault();
-        setLoading(true);
-        setError('');
+    try {
+      const response = await axios.post(URL, formData);
+      const { user, token } = response.data;
+      
+      login(user, token);
+      navigate('/dashboard');
+    } catch (err) {
+      setError(err.response?.data?.message || 'Failed to login. Please try again.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
-        try {
-            // Sends request to localhost:3000
-            const response = await api.post(ENDPOINTS.LOGIN, formData);
-
-            console.log("LOGIN SUCCESS RESPONSE:", response); // Let's log it just in case!
-
-            // Depending on your friend's setup, the token is usually in one of these two spots
-            const token = response.token || response.data?.token;
-            const userData = response.user || response.data?.user || { email: formData.email };
-
-            if (token) {
-                login(userData, token);
-                navigate(from, { replace: true });
-            } else {
-                setError("Logged in, but couldn't find the token in the response!");
-            }
-        } catch (err) {
-            console.error("LOGIN ERROR:", err);
-            setError(err.response?.data?.message || 'Login failed. Check your email and password.');
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    return (
-        <div className="min-h-screen bg-gray-50 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
-            <div className="sm:mx-auto sm:w-full sm:max-w-md">
-                <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
-                    Sign in to your account
-                </h2>
-                <p className="mt-2 text-center text-sm text-gray-600">
-                    Or <span className="font-medium text-green-600 hover:text-green-500 cursor-pointer">register for a new account</span>
-                </p>
-            </div>
-
-            <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
-                <div className="bg-white py-8 px-4 shadow sm:rounded-lg sm:px-10 border border-gray-100">
-
-                    {error && (
-                        <div className="mb-4 bg-red-50 border-l-4 border-red-500 p-4">
-                            <p className="text-sm text-red-700">{error}</p>
-                        </div>
-                    )}
-
-                    <form className="space-y-6" onSubmit={handleSubmit}>
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700">Email address</label>
-                            <div className="mt-1">
-                                <input
-                                    name="email"
-                                    type="email"
-                                    required
-                                    value={formData.email}
-                                    onChange={handleChange}
-                                    className="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-green-500 focus:border-green-500 sm:text-sm"
-                                />
-                            </div>
-                        </div>
-
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700">Password</label>
-                            <div className="mt-1">
-                                <input
-                                    name="password"
-                                    type="password"
-                                    required
-                                    value={formData.password}
-                                    onChange={handleChange}
-                                    className="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-green-500 focus:border-green-500 sm:text-sm"
-                                />
-                            </div>
-                        </div>
-
-                        <div>
-                            <button
-                                type="submit"
-                                disabled={loading}
-                                className={`w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white ${
-                                    loading ? 'bg-green-400 cursor-not-allowed' : 'bg-green-600 hover:bg-green-700'
-                                } focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition-colors`}
-                            >
-                                {loading ? 'Signing in...' : 'Sign in'}
-                            </button>
-                        </div>
-                    </form>
-                </div>
-            </div>
+  return (
+    <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4">
+      <div className="max-w-md w-full bg-white rounded-xl shadow-lg border border-slate-100 overflow-hidden">
+        {/* Header Section */}
+        <div className="bg-purple-700 px-8 py-10 text-center">
+          <h2 className="text-3xl font-bold text-white tracking-tight">Welcome Back</h2>
+          <p className="text-purple-100 mt-2 text-sm font-medium">Log in to manage civic tasks</p>
         </div>
-    );
+
+        {/* Form Section */}
+        <div className="px-8 py-8">
+          {error && (
+            <div className="mb-6 bg-red-50 border border-red-100 text-red-600 px-4 py-3 rounded-lg flex items-start gap-3 text-sm">
+              <AlertCircle size={18} className="mt-0.5 shrink-0" />
+              <span>{error}</span>
+            </div>
+          )}
+
+          <form onSubmit={handleSubmit} className="space-y-6">
+            <div>
+              <label className="block text-sm font-semibold text-slate-700 mb-2">Email Address</label>
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
+                  <Mail size={18} />
+                </div>
+                <input
+                  type="email"
+                  name="email"
+                  className="w-full pl-10 pr-4 py-3 border border-slate-200 rounded-lg focus:ring-2 focus:ring-purple-600 focus:border-purple-600 transition-colors text-slate-800 placeholder-slate-400 bg-slate-50 focus:bg-white text-sm"
+                  placeholder="admin@example.com"
+                  value={formData.email}
+                  onChange={handleChange}
+                  required
+                />
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-sm font-semibold text-slate-700 mb-2">Password</label>
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
+                  <Lock size={18} />
+                </div>
+                <input
+                  type="password"
+                  name="password"
+                  className="w-full pl-10 pr-4 py-3 border border-slate-200 rounded-lg focus:ring-2 focus:ring-purple-600 focus:border-purple-600 transition-colors text-slate-800 placeholder-slate-400 bg-slate-50 focus:bg-white text-sm"
+                  placeholder="••••••••"
+                  value={formData.password}
+                  onChange={handleChange}
+                  required
+                />
+              </div>
+            </div>
+
+            <button
+              type="submit"
+              disabled={isLoading}
+              className="w-full bg-purple-700 hover:bg-purple-800 text-white font-semibold py-3 px-4 rounded-lg transition-colors flex items-center justify-center gap-2 focus:outline-none focus:ring-2 focus:ring-purple-600 focus:ring-offset-2 disabled:opacity-70 disabled:cursor-not-allowed shadow-md shadow-purple-200"
+            >
+              {isLoading ? (
+                <>
+                  <Loader2 size={18} className="animate-spin" />
+                  Authenticating...
+                </>
+              ) : (
+                'Sign In'
+              )}
+            </button>
+          </form>
+        </div>
+
+        {/* Footer Section */}
+        <div className="px-8 py-5 bg-slate-50 border-t border-slate-100/60 text-center">
+          <p className="text-sm text-slate-600 font-medium">
+            Don't have an account?{' '}
+            <Link to="/register" className="text-purple-700 hover:text-purple-800 font-bold hover:underline">
+              Create an account
+            </Link>
+          </p>
+        </div>
+      </div>
+    </div>
+  );
 };
 
 export default Login;
