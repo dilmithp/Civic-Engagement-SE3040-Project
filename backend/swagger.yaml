@@ -1,0 +1,695 @@
+openapi: 3.0.3
+info:
+  title: Civic Engagement Platform - Backend API
+  description: |
+    RESTful API for the Civic Engagement & Sustainability Platform.
+    
+    **Authentication:** Most routes require a JWT Bearer token.
+    Get a token by logging in via the Acquisitions API (`POST /api/auth/sign-in`).
+    
+    **Roles:** `citizen` | `official` | `admin`
+  version: 1.0.0
+
+servers:
+  - url: http://localhost:5002/api/v1
+    description: Local Development Server
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    # ─── Issues ──────────────────────────────────────
+    IssueInput:
+      type: object
+      required: [title, description, category, longitude, latitude]
+      properties:
+        title:
+          type: string
+          maxLength: 100
+          example: "Pothole on Main Street"
+        description:
+          type: string
+          maxLength: 1000
+          example: "Large pothole near the intersection causing vehicle damage."
+        category:
+          type: string
+          enum: [Pothole, Broken Streetlight, Illegal Dumping, Water Leak, Damaged Sidewalk, Graffiti, Traffic Signal, Other]
+          example: "Pothole"
+        longitude:
+          type: number
+          format: float
+          example: -118.2437
+        latitude:
+          type: number
+          format: float
+          example: 34.0522
+        address:
+          type: string
+          example: "123 Main St, Los Angeles"
+        images:
+          type: array
+          items:
+            type: string
+            format: binary
+          description: Up to 5 image files.
+
+    StatusUpdate:
+      type: object
+      required: [status]
+      properties:
+        status:
+          type: string
+          enum: [Pending, In Progress, Resolved, Withdrawn]
+        comment:
+          type: string
+          maxLength: 500
+
+    AddComment:
+      type: object
+      required: [text]
+      properties:
+        text:
+          type: string
+          maxLength: 500
+          example: "Repair crew scheduled for tomorrow."
+
+    # ─── Surveys ─────────────────────────────────────
+    SurveyInput:
+      type: object
+      required: [title, description, options, deadline]
+      properties:
+        title:
+          type: string
+          example: "Should we add more parks?"
+        description:
+          type: string
+          example: "Vote on the city's green space expansion plan."
+        options:
+          type: array
+          minItems: 2
+          items:
+            type: object
+            properties:
+              text:
+                type: string
+                example: "Yes, more parks needed"
+        deadline:
+          type: string
+          format: date-time
+          example: "2026-04-01T00:00:00Z"
+        targetAudience:
+          type: string
+          enum: [all, citizen, official]
+          default: all
+        isImportant:
+          type: boolean
+          default: false
+        notifyEmail:
+          type: string
+          format: email
+
+    Vote:
+      type: object
+      required: [selectedOptionIndex]
+      properties:
+        selectedOptionIndex:
+          type: integer
+          minimum: 0
+          example: 1
+
+    # ─── Green Initiatives ────────────────────────────
+    InitiativeInput:
+      type: object
+      required: [title, description, location, date]
+      properties:
+        title:
+          type: string
+          maxLength: 100
+          example: "Park Cleanup Drive"
+        description:
+          type: string
+          maxLength: 1000
+          example: "Monthly cleanup of Central Park."
+        location:
+          type: string
+          example: "Central Park, New York"
+        date:
+          type: string
+          format: date-time
+          example: "2026-04-10T09:00:00Z"
+        status:
+          type: string
+          enum: [Upcoming, Ongoing, Completed]
+          default: Upcoming
+
+    # ─── Marketplace ──────────────────────────────────
+    ListingInput:
+      type: object
+      required: [title, description, category, price]
+      properties:
+        title:
+          type: string
+          example: "Organic Bamboo Tote Bag"
+        description:
+          type: string
+          example: "100% natural and biodegradable tote bag."
+        category:
+          type: string
+          example: "Eco Products"
+        price:
+          type: number
+          format: float
+          example: 12.99
+        images:
+          type: array
+          items:
+            type: string
+          example: ["https://cdn.example.com/img1.jpg"]
+
+    ListingStatusUpdate:
+      type: object
+      required: [status]
+      properties:
+        status:
+          type: string
+          enum: [active, inactive, sold]
+
+    # ─── Generic Responses ────────────────────────────
+    SuccessResponse:
+      type: object
+      properties:
+        status:
+          type: string
+          example: success
+        message:
+          type: string
+        data:
+          type: object
+
+    ErrorResponse:
+      type: object
+      properties:
+        status:
+          type: string
+          example: error
+        message:
+          type: string
+          example: "Not authorized to access this route"
+
+# ═══════════════════════════════════════════════════════
+# PATHS
+# ═══════════════════════════════════════════════════════
+paths:
+
+  # ─────────────────────────────────────────────────────
+  # ISSUES
+  # ─────────────────────────────────────────────────────
+  /issues:
+    get:
+      tags: [Issues]
+      summary: Get all public issues
+      description: Publicly accessible. Filter by category, location radius.
+      parameters:
+        - in: query
+          name: page
+          schema: { type: integer, default: 1 }
+        - in: query
+          name: limit
+          schema: { type: integer, default: 10, maximum: 50 }
+        - in: query
+          name: category
+          schema:
+            type: string
+            enum: [Pothole, Broken Streetlight, Illegal Dumping, Water Leak, Damaged Sidewalk, Graffiti, Traffic Signal, Other]
+        - in: query
+          name: latitude
+          schema: { type: number, format: float }
+        - in: query
+          name: longitude
+          schema: { type: number, format: float }
+        - in: query
+          name: radius
+          description: Radius in meters (100–50000)
+          schema: { type: integer }
+      responses:
+        "200":
+          description: List of public issues
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/SuccessResponse" }
+
+    post:
+      tags: [Issues]
+      summary: Report a new issue
+      description: Requires authentication. Supports image uploads (multipart/form-data).
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema: { $ref: "#/components/schemas/IssueInput" }
+      responses:
+        "201":
+          description: Issue reported successfully
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/SuccessResponse" }
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ErrorResponse" }
+
+  /issues/my-issues:
+    get:
+      tags: [Issues]
+      summary: Get issues reported by the authenticated user
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: query
+          name: page
+          schema: { type: integer, default: 1 }
+        - in: query
+          name: limit
+          schema: { type: integer, default: 10 }
+      responses:
+        "200":
+          description: User's own issues
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/SuccessResponse" }
+
+  /issues/{id}:
+    get:
+      tags: [Issues]
+      summary: Get a single issue by ID
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: string }
+      responses:
+        "200":
+          description: Issue details
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/SuccessResponse" }
+        "404":
+          description: Issue not found
+
+    delete:
+      tags: [Issues]
+      summary: Delete an issue
+      description: Requires authentication. Only the reporter or an admin can delete.
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: string }
+      responses:
+        "200":
+          description: Issue deleted
+        "403":
+          description: Forbidden
+
+  /issues/{id}/withdraw:
+    patch:
+      tags: [Issues]
+      summary: Withdraw a reported issue
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: string }
+      responses:
+        "200":
+          description: Issue withdrawn
+
+  /issues/{id}/status:
+    patch:
+      tags: [Issues]
+      summary: Update issue status (Admin / Official only)
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/StatusUpdate" }
+      responses:
+        "200":
+          description: Status updated
+        "403":
+          description: Forbidden — Insufficient role
+
+  /issues/{id}/comments:
+    post:
+      tags: [Issues]
+      summary: Add an official comment to an issue
+      description: Admin / Official only.
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/AddComment" }
+      responses:
+        "200":
+          description: Comment added
+
+  # ─────────────────────────────────────────────────────
+  # SURVEYS
+  # ─────────────────────────────────────────────────────
+  /surveys:
+    post:
+      tags: [Surveys]
+      summary: Create a new survey (Admin / Official only)
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/SurveyInput" }
+      responses:
+        "201":
+          description: Survey created
+
+  /surveys/active:
+    get:
+      tags: [Surveys]
+      summary: Get all active surveys
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Active surveys list
+
+  /surveys/{id}:
+    get:
+      tags: [Surveys]
+      summary: Get a single survey by ID
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: string }
+      responses:
+        "200":
+          description: Survey details
+        "404":
+          description: Survey not found
+
+    put:
+      tags: [Surveys]
+      summary: Update a survey (Admin / Official only)
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/SurveyInput" }
+      responses:
+        "200":
+          description: Survey updated
+
+    delete:
+      tags: [Surveys]
+      summary: Close / delete a survey (Admin / Official only)
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: string }
+      responses:
+        "200":
+          description: Survey closed
+
+  /surveys/{id}/vote:
+    patch:
+      tags: [Surveys]
+      summary: Submit or update a vote on a survey
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/Vote" }
+      responses:
+        "200":
+          description: Vote registered / updated
+
+  /surveys/{id}/results:
+    get:
+      tags: [Surveys]
+      summary: Get survey results formatted for Chart.js
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: string }
+      responses:
+        "200":
+          description: Aggregated results with percentages
+
+  # ─────────────────────────────────────────────────────
+  # GREEN INITIATIVES
+  # ─────────────────────────────────────────────────────
+  /green-initiatives:
+    get:
+      tags: [Green Initiatives]
+      summary: Get all green initiatives (Public)
+      responses:
+        "200":
+          description: List of initiatives sorted by newest
+
+    post:
+      tags: [Green Initiatives]
+      summary: Create a new green initiative
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/InitiativeInput" }
+      responses:
+        "201":
+          description: Initiative created
+
+  /green-initiatives/{id}:
+    get:
+      tags: [Green Initiatives]
+      summary: Get a single initiative by ID (Public)
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: string }
+      responses:
+        "200":
+          description: Initiative details
+        "404":
+          description: Not found
+
+    put:
+      tags: [Green Initiatives]
+      summary: Update an initiative (Organizer / Admin only)
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/InitiativeInput" }
+      responses:
+        "200":
+          description: Initiative updated
+        "403":
+          description: Forbidden
+
+    delete:
+      tags: [Green Initiatives]
+      summary: Delete an initiative (Organizer / Admin only)
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: string }
+      responses:
+        "200":
+          description: Initiative deleted
+        "403":
+          description: Forbidden
+
+  # ─────────────────────────────────────────────────────
+  # MARKETPLACE
+  # ─────────────────────────────────────────────────────
+  /marketplace:
+    get:
+      tags: [Marketplace]
+      summary: Get all marketplace listings (Public)
+      responses:
+        "200":
+          description: Paginated listings
+
+    post:
+      tags: [Marketplace]
+      summary: Create a new listing
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/ListingInput" }
+      responses:
+        "201":
+          description: Listing created
+
+  /marketplace/{id}:
+    get:
+      tags: [Marketplace]
+      summary: Get a single listing (Public)
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: string }
+      responses:
+        "200":
+          description: Listing details
+
+    patch:
+      tags: [Marketplace]
+      summary: Update a listing
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/ListingInput" }
+      responses:
+        "200":
+          description: Listing updated
+
+    delete:
+      tags: [Marketplace]
+      summary: Delete a listing
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: string }
+      responses:
+        "200":
+          description: Listing deleted
+
+  /marketplace/{id}/status:
+    patch:
+      tags: [Marketplace]
+      summary: Update a listing's status
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/ListingStatusUpdate" }
+      responses:
+        "200":
+          description: Status updated
+
+  # ─────────────────────────────────────────────────────
+  # GEOCODING
+  # ─────────────────────────────────────────────────────
+  /geocode/reverse:
+    get:
+      tags: [Geocoding]
+      summary: Convert coordinates to human-readable address (Public)
+      parameters:
+        - in: query
+          name: lat
+          required: true
+          schema: { type: number, format: float, example: 34.0522 }
+        - in: query
+          name: lng
+          required: true
+          schema: { type: number, format: float, example: -118.2437 }
+      responses:
+        "200":
+          description: Address resolved from coordinates
+
+  /geocode/forward:
+    get:
+      tags: [Geocoding]
+      summary: Convert address to coordinates (Public)
+      parameters:
+        - in: query
+          name: address
+          required: true
+          schema:
+            type: string
+            example: "123 Main St, Los Angeles"
+      responses:
+        "200":
+          description: Coordinates resolved from address

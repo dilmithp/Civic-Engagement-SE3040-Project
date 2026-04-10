@@ -9,6 +9,15 @@ import issueRoutes from './routes/issue.routes.js';
 import marketplaceRoutes from './routes/marketplace.routes.js';
 import surveyRoutes from './routes/survey.routes.js';
 import geocodingRoutes from './routes/geocoding.routes.js';
+import swaggerUi from 'swagger-ui-express';
+import YAML from 'yamljs';
+import { createRequire } from 'module';
+import path from 'path';
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+const swaggerDocument = YAML.load(path.join(__dirname, '../swagger.yaml'));
 
 const app = express();
 
@@ -27,6 +36,9 @@ app.use('/api/v1/geocode', geocodingRoutes);
 app.get('/health', (req, res) => {
     res.status(200).json({ status: 'success', message: 'Server is healthy' });
 });
+
+// Swagger API Docs
+app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
 
 // 404 handler
 app.all('*', (req, res) => {

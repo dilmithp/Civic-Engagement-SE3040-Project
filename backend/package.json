@@ -22,7 +22,9 @@
     "morgan": "^1.10.0",
     "multer": "^2.0.2",
     "multer-storage-cloudinary": "^4.0.0",
-    "nodemailer": "^8.0.1"
+    "nodemailer": "^8.0.1",
+    "swagger-ui-express": "^5.0.1",
+    "yamljs": "^0.3.0"
   },
   "devDependencies": {
     "jest": "^29.7.0",
