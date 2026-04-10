@@ -27,7 +27,7 @@ const Login = () => {
     try {
       const response = await axios.post(URL, formData);
       const { user, token } = response.data;
-      
+      localStorage.setItem('token', token);
       login(user, token);
       navigate('/dashboard');
     } catch (err) {

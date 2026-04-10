@@ -85,7 +85,7 @@ const InitiativeDetails = () => {
                 <div className="text-5xl mb-4">🌿</div>
                 <h2 className="text-xl font-bold text-gray-700 mb-2">Initiative not found</h2>
                 <p className="text-gray-500 mb-6">This initiative may have been removed or doesn't exist.</p>
-                <Link to="/green-initiatives" className="inline-flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white font-semibold py-2.5 px-5 rounded-xl shadow transition-all text-sm">
+                <Link to="/dashboard/initiatives" className="inline-flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white font-semibold py-2.5 px-5 rounded-xl shadow transition-all text-sm">
                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M10 19l-7-7m0 0l7-7m-7 7h18" /></svg>
                     Back to Initiatives
                 </Link>
@@ -97,7 +97,7 @@ const InitiativeDetails = () => {
         <div className="min-h-screen bg-gray-50 py-12 px-4">
             <div className="max-w-3xl mx-auto">
                 <Link
-                    to="/green-initiatives"
+                    to="/dashboard/initiatives"
                     className="inline-flex items-center gap-1.5 text-sm font-semibold text-gray-500 hover:text-green-700 mb-8 transition-colors group"
                 >
                     <svg className="w-4 h-4 transition-transform group-hover:-translate-x-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M10 19l-7-7m0 0l7-7m-7 7h18" /></svg>
@@ -202,7 +202,7 @@ const InitiativeDetails = () => {
                         {/* Footer action */}
                         <div className="pt-2 border-t border-gray-100 flex justify-end">
                             <Link
-                                to="/green-initiatives"
+                                to="/dashboard/initiatives"
                                 className="inline-flex items-center gap-2 text-sm font-semibold text-gray-500 hover:text-green-700 transition-colors"
                             >
                                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M10 19l-7-7m0 0l7-7m-7 7h18" /></svg>

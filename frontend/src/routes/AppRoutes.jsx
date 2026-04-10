@@ -23,8 +23,8 @@ const AppRoutes = () => {
       <Route path="/unauthorized" element={<Unauthorized />} />
 
       {/* Public Routes */}
-      <Route path="/green-initiatives" element={<GreenInitiativeList />} />
-      <Route path="/green-initiatives/:id" element={<InitiativeDetails />} />
+      <Route path="/dashboard/initiatives" element={<GreenInitiativeList />} />
+      <Route path="/dashboard/initiatives/:id" element={<InitiativeDetails />} />
 
       {/* Protected dashboard routes */}
       <Route
@@ -37,11 +37,14 @@ const AppRoutes = () => {
       >
         <Route index element={<Dashboard />} />
         <Route path="surveys" element={<Surveys />} />
+        <Route path="initiatives" element={<GreenInitiativeList />} />
+        <Route path="initiatives/:id" element={<InitiativeDetails />} />
+        <Route path="initiatives/create" element={<CreateInitiativeForm />} />
+        <Route path="initiatives/edit/:id" element={<EditInitiativeForm />} />
+
       </Route>
 
-      {/* Protected Routes */}
-      <Route path="/green-initiatives/create" element={<ProtectedRoute><CreateInitiativeForm /></ProtectedRoute>} />
-      <Route path="/green-initiatives/edit/:id" element={<ProtectedRoute><EditInitiativeForm /></ProtectedRoute>} />
+      
 
       {/* Team members will add their routes here */}
     </Routes>
