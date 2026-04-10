@@ -1,5 +1,6 @@
 import Issue from '../models/Issue.model.js';
 import CloudinaryService from './cloudinary.service.js';
+import GeocodingService from './geocoding.service.js';
 import AppError from '../utils/AppError.js';
 import {
     ISSUE_STATUS,
@@ -15,6 +16,7 @@ import {
 class IssueService {
     /**
      * Create a new issue report.
+     * Auto-fills address from coordinates if not provided (reverse geocoding).
      * @param {object} issueData - { title, description, category, coordinates, address }
      * @param {string} userId - Reporter's user ID
      * @param {Array} files - Uploaded image files from multer
@@ -22,6 +24,21 @@ class IssueService {
      */
     static async createIssue(issueData, userId, files = []) {
         const { title, description, category, longitude, latitude, address } = issueData;
+
+        // Auto-fill address via reverse geocoding if not provided
+        let resolvedAddress = address || '';
+        if (!address && latitude && longitude) {
+            try {
+                const geo = await GeocodingService.reverseGeocode(
+                    parseFloat(latitude),
+                    parseFloat(longitude)
+                );
+                resolvedAddress = geo.displayName;
+            } catch (err) {
+                // Geocoding is optional — don't fail issue creation if it doesn't work
+                console.warn('⚠️ Auto-geocoding failed, proceeding without address:', err.message);
+            }
+        }
 
         // Extract uploaded image references
         const images = CloudinaryService.extractUploadedImages(files);
@@ -33,7 +50,7 @@ class IssueService {
             location: {
                 type: 'Point',
                 coordinates: [parseFloat(longitude), parseFloat(latitude)],
-                address: address || ''
+                address: resolvedAddress
             },
             images,
             reporter: userId,
@@ -49,6 +66,7 @@ class IssueService {
         return issue;
     }
 
+
     /**
      * Get a single issue by ID with populated references.
      * @param {string} issueId
@@ -56,10 +74,7 @@ class IssueService {
      * @throws {AppError} If issue not found
      */
     static async getIssueById(issueId) {
-        const issue = await Issue.findById(issueId)
-            .populate('reporter', 'name email')
-            .populate('statusHistory.changedBy', 'name')
-            .populate('comments.user', 'name');
+        const issue = await Issue.findById(issueId);
 
         if (!issue) {
             throw new AppError('Issue not found', 404);
@@ -84,8 +99,8 @@ class IssueService {
         const options = {
             page: parseInt(page),
             limit: parseInt(limit),
-            sort: { createdAt: -1 },
-            populate: { path: 'reporter', select: 'name email' }
+            sort: { createdAt: -1 }
+            // populate removed (reporter = postgres ID)
         };
 
         return Issue.paginate(filter, options);
@@ -124,8 +139,8 @@ class IssueService {
             page: parseInt(page),
             limit: parseInt(limit),
             sort: { createdAt: -1 },
-            populate: { path: 'reporter', select: 'name' },
             select: '-statusHistory' // Exclude audit trail from public feed
+            // populate removed (reporter = postgres ID)
         };
 
         return Issue.paginate(filter, options);
