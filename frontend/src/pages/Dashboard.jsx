@@ -37,7 +37,12 @@ const Dashboard = () => {
             <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-100">
               <h3 className="text-xl font-bold text-slate-800 mb-4 pb-2 border-b border-slate-100">Citizen Workspace</h3>
               <ul className="space-y-3">
-                <li className="p-4 hover:bg-purple-50 rounded-lg cursor-pointer transition-colors border border-transparent hover:border-purple-100 font-medium text-slate-700 hover:text-purple-700">Submit a new Issue</li>
+                <li 
+                  onClick={() => navigate('/dashboard/issues/create')}
+                  className="p-4 hover:bg-purple-50 rounded-lg cursor-pointer transition-colors border border-transparent hover:border-purple-100 font-medium text-slate-700 hover:text-purple-700"
+                >
+                  Submit a new Issue
+                </li>
                 <li className="p-4 hover:bg-purple-50 rounded-lg cursor-pointer transition-colors border border-transparent hover:border-purple-100 font-medium text-slate-700 hover:text-purple-700">View active Participatory Planning Surveys</li>
                 <li className="p-4 hover:bg-purple-50 rounded-lg cursor-pointer transition-colors border border-transparent hover:border-purple-100 font-medium text-slate-700 hover:text-purple-700">Vote on Green Initiatives</li>
               </ul>
@@ -49,7 +54,12 @@ const Dashboard = () => {
             <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-100">
               <h3 className="text-xl font-bold text-slate-800 mb-4 pb-2 border-b border-slate-100">Official Workspace</h3>
               <ul className="space-y-3">
-                <li className="p-4 hover:bg-purple-50 rounded-lg cursor-pointer transition-colors border border-transparent hover:border-purple-100 font-medium text-slate-700 hover:text-purple-700">Review reported Issues</li>
+                <li 
+                  onClick={() => navigate('/dashboard/issues')}
+                  className="p-4 hover:bg-purple-50 rounded-lg cursor-pointer transition-colors border border-transparent hover:border-purple-100 font-medium text-slate-700 hover:text-purple-700"
+                >
+                  Review reported Issues
+                </li>
                 <li className="p-4 hover:bg-purple-50 rounded-lg cursor-pointer transition-colors border border-transparent hover:border-purple-100 font-medium text-slate-700 hover:text-purple-700">Publish new Surveys</li>
                 <li className="p-4 hover:bg-purple-50 rounded-lg cursor-pointer transition-colors border border-transparent hover:border-purple-100 font-medium text-slate-700 hover:text-purple-700">Evaluate Green Initiatives</li>
               </ul>

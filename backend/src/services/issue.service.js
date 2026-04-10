@@ -66,6 +66,62 @@ class IssueService {
         return issue;
     }
 
+    /**
+     * Update an issue's literal details (text/location). Only reporter can edit when Pending.
+     * @param {string} issueId
+     * @param {string} userId
+     * @param {object} updateData - { title, description, category, latitude, longitude, address }
+     * @returns {Promise<object>}
+     */
+    static async updateIssue(issueId, userId, updateData) {
+        const issue = await Issue.findById(issueId);
+        if (!issue) {
+            throw new AppError('Issue not found', 404);
+        }
+
+        // Only reporter can edit
+        if (issue.reporter.toString() !== userId) {
+            throw new AppError('Only the original reporter can edit this issue', 403);
+        }
+
+        // Only allow edits when status is Pending
+        if (issue.status !== ISSUE_STATUS.PENDING) {
+            throw new AppError('Issues can only be edited while they are in Pending status', 400);
+        }
+
+        const { title, description, category, latitude, longitude, address } = updateData;
+
+        // Mutate fields if provided
+        if (title) issue.title = title;
+        if (description) issue.description = description;
+        if (category) issue.category = category;
+
+        // Mutate location if coordinates changed
+        if (latitude && longitude) {
+            let newAddress = address || null;
+            if (!address) {
+                const oldLng = issue.location.coordinates[0];
+                const oldLat = issue.location.coordinates[1];
+                if (parseFloat(longitude) !== oldLng || parseFloat(latitude) !== oldLat) {
+                    try {
+                        const geo = await GeocodingService.reverseGeocode(parseFloat(latitude), parseFloat(longitude));
+                        newAddress = geo.displayName;
+                    } catch (err) {
+                        console.warn('Auto-geocoding failed on edit:', err.message);
+                    }
+                }
+            }
+
+            issue.location = {
+                type: 'Point',
+                coordinates: [parseFloat(longitude), parseFloat(latitude)],
+                address: newAddress || (address === undefined ? issue.location.address : '')
+            };
+        }
+
+        await issue.save();
+        return issue;
+    }
 
     /**
      * Get a single issue by ID with populated references.
@@ -112,12 +168,16 @@ class IssueService {
      * @returns {Promise<object>} Paginated result
      */
     static async getPublicIssues(query = {}) {
-        const { page = 1, limit = 10, category, latitude, longitude, radius } = query;
+        const { page = 1, limit = 10, category, status, latitude, longitude, radius } = query;
 
-        // Only show active issues (not withdrawn)
-        const filter = {
-            status: { $ne: ISSUE_STATUS.WITHDRAWN }
-        };
+        // Base filter excludes withdrawn, but can be overridden if specific status requested
+        const filter = {};
+        
+        if (status) {
+            filter.status = status;
+        } else {
+            filter.status = { $ne: ISSUE_STATUS.WITHDRAWN };
+        }
 
         if (category) filter.category = category;
 

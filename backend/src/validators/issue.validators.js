@@ -48,6 +48,47 @@ export const createIssueValidator = [
         .withMessage('Address cannot exceed 300 characters')
 ];
 
+// Validate updating issue text content (Edit Mode)
+export const updateIssueValidator = [
+    param('id')
+        .isMongoId()
+        .withMessage('Invalid issue ID'),
+
+    body('title')
+        .optional()
+        .trim()
+        .isLength({ min: 1, max: 100 })
+        .withMessage('Title cannot be empty or exceed 100 characters'),
+
+    body('description')
+        .optional()
+        .trim()
+        .isLength({ min: 1, max: 1000 })
+        .withMessage('Description cannot be empty or exceed 1000 characters'),
+
+    body('category')
+        .optional()
+        .trim()
+        .isIn(ISSUE_CATEGORIES)
+        .withMessage(`Category must be one of: ${ISSUE_CATEGORIES.join(', ')}`),
+
+    body('longitude')
+        .optional()
+        .isFloat({ min: -180, max: 180 })
+        .withMessage('Longitude must be between -180 and 180'),
+
+    body('latitude')
+        .optional()
+        .isFloat({ min: -90, max: 90 })
+        .withMessage('Latitude must be between -90 and 90'),
+
+    body('address')
+        .optional()
+        .trim()
+        .isLength({ max: 300 })
+        .withMessage('Address cannot exceed 300 characters')
+];
+
 // Validate updating issue status
 export const updateStatusValidator = [
     param('id')
@@ -98,6 +139,11 @@ export const getPublicIssuesValidator = [
         .optional()
         .isIn(ISSUE_CATEGORIES)
         .withMessage(`Category must be one of: ${ISSUE_CATEGORIES.join(', ')}`),
+
+    query('status')
+        .optional()
+        .isIn(Object.values(ISSUE_STATUS))
+        .withMessage(`Status must be one of: ${Object.values(ISSUE_STATUS).join(', ')}`),
 
     query('latitude')
         .optional()

@@ -9,5 +9,13 @@ export const ENDPOINTS = {
     GET_ACTIVE: '/surveys/active',
     BASE: '/surveys'
   },
-  GREEN_INITIATIVES: '/green-initiatives'
+  GREEN_INITIATIVES: '/green-initiatives',
+  ISSUES: {
+    BASE: '/issues',
+    MY_ISSUES: '/issues/my-issues',
+  },
+  GEOCODE: {
+    FORWARD: '/geocode/forward',
+    REVERSE: '/geocode/reverse',
+  }
 };
