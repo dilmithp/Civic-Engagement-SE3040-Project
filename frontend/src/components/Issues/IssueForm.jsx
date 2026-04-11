@@ -22,20 +22,6 @@ const IssueForm = () => {
   const { setPageTitle } = useUI();
   const isEditMode = Boolean(id);
 
-  // Set breadcrumb title based on mode
-  useEffect(() => {
-    if (isEditMode) {
-      if (formData.title) {
-        setPageTitle(`Edit: ${formData.title}`);
-      } else {
-        setPageTitle('Edit Report');
-      }
-    } else {
-      setPageTitle('Submit New Issue');
-    }
-    return () => setPageTitle('');
-  }, [isEditMode, formData.title, setPageTitle]);
-
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [imagesPreview, setImagesPreview] = useState([]);
@@ -51,12 +37,6 @@ const IssueForm = () => {
     lng: 0,
     images: [] // Only used in Create Mode
   });
-
-  useEffect(() => {
-    if (isEditMode) {
-      fetchIssueForEdit();
-    }
-  }, [id, isEditMode]);
 
   const fetchIssueForEdit = async () => {
     try {
@@ -86,6 +66,26 @@ const IssueForm = () => {
       setLoading(false);
     }
   };
+
+  // Set breadcrumb title based on mode
+  useEffect(() => {
+    if (isEditMode) {
+      if (formData.title) {
+        setPageTitle(`Edit: ${formData.title}`);
+      } else {
+        setPageTitle('Edit Report');
+      }
+    } else {
+      setPageTitle('Submit New Issue');
+    }
+    return () => setPageTitle('');
+  }, [isEditMode, formData.title, setPageTitle]);
+
+  useEffect(() => {
+    if (isEditMode) {
+      fetchIssueForEdit();
+    }
+  }, [id, isEditMode]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;

@@ -11,8 +11,6 @@ const GreenInitiativeList = () => {
     const [deleting, setDeleting] = useState(false);
     const { user } = useAuth();
 
-    useEffect(() => { fetchInitiatives(); }, []);
-
     const fetchInitiatives = async () => {
         try {
             setLoading(true);
@@ -39,6 +37,8 @@ const GreenInitiativeList = () => {
             setDeleting(false);
         }
     };
+
+    useEffect(() => { fetchInitiatives(); }, []);
 
     const getStatusStyle = (status) => {
         switch (status) {

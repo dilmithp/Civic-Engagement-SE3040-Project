@@ -30,18 +30,6 @@ const IssueDetails = () => {
   const [statusUpdating, setStatusUpdating] = useState(false);
   const [actionLoading, setActionLoading] = useState(false);
 
-  useEffect(() => {
-    fetchIssue();
-  }, [id]);
-
-  // Update dynamic breadcrumb title
-  useEffect(() => {
-    if (issue?.title) {
-      setPageTitle(issue.title);
-    }
-    return () => setPageTitle('');
-  }, [issue, setPageTitle]);
-
   const fetchIssue = async () => {
     try {
       setLoading(true);
@@ -75,9 +63,7 @@ const IssueDetails = () => {
     
     try {
       setSubmittingComment(true);
-      const res = await issueService.addComment(id, { text: commentText });
-      // Depending on backend, might return the new comment or the whole issue.
-      // We will re-fetch to be safe.
+      await issueService.addComment(id, { text: commentText });
       setCommentText('');
       await fetchIssue();
     } catch (err) {
@@ -116,6 +102,18 @@ const IssueDetails = () => {
     }
   };
 
+  useEffect(() => {
+    fetchIssue();
+  }, [id]);
+
+  // Update dynamic breadcrumb title
+  useEffect(() => {
+    if (issue?.title) {
+      setPageTitle(issue.title);
+    }
+    return () => setPageTitle('');
+  }, [issue, setPageTitle]);
+
   if (loading) {
     return (
       <div className="flex flex-col items-center justify-center py-32 text-textMuted">
@@ -138,9 +136,10 @@ const IssueDetails = () => {
 
   const isAdminOrOfficial = user?.role === 'admin' || user?.role === 'official';
   
-  const currentUserId = user?.id || user?._id;
-  const issueReporterId = issue?.reporter?._id || issue?.reporter || issue?.reportedBy;
-  const isOwner = currentUserId && issueReporterId && String(currentUserId) === String(issueReporterId);
+  // Robust owner check: handles both string IDs and object IDs
+  const currentUserId = String(user?.id || user?._id || '');
+  const issueReporterId = String(issue?.reporter?._id || issue?.reporter || issue?.reportedBy || '');
+  const isOwner = currentUserId && issueReporterId && currentUserId === issueReporterId;
 
   return (
     <div className="max-w-5xl mx-auto py-6 space-y-6">
@@ -242,7 +241,7 @@ const IssueDetails = () => {
         {/* Sidebar Actions */}
         <div className="space-y-6">
           {/* Status Update Card (Admins/Officials) */}
-          {(user.role === 'admin' || user.role === 'official') && (
+          {(user?.role === 'admin' || user?.role === 'official') && (
             <div className="bg-surface border border-border rounded-xl shadow-sm p-6 mb-6">
               <h3 className="font-semibold text-textMain mb-4 flex items-center gap-2">
                 <AlertCircle size={18} className="text-primary-500" />

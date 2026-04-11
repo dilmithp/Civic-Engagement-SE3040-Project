@@ -27,24 +27,6 @@ const IssueList = () => {
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
 
-  // Debounce search to prevent excessive API calls
-  useEffect(() => {
-    const handler = setTimeout(() => {
-      setDebouncedSearch(searchQuery);
-    }, 500);
-    return () => clearTimeout(handler);
-  }, [searchQuery]);
-
-  // Reset page to 1 whenever filters or search strictly change
-  useEffect(() => {
-    setPage(1);
-  }, [tab, filterCategory, filterStatus, debouncedSearch]);
-
-  // Refetch when parameters mutate
-  useEffect(() => {
-    fetchIssues();
-  }, [tab, filterCategory, filterStatus, debouncedSearch, page]);
-
   const fetchIssues = async () => {
     setLoading(true);
     setError(null);
@@ -85,6 +67,24 @@ const IssueList = () => {
       setLoading(false);
     }
   };
+
+  // Debounce search to prevent excessive API calls
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      setDebouncedSearch(searchQuery);
+    }, 500);
+    return () => clearTimeout(handler);
+  }, [searchQuery]);
+
+  // Reset page to 1 whenever filters or search strictly change
+  useEffect(() => {
+    setPage(1);
+  }, [tab, filterCategory, filterStatus, debouncedSearch]);
+
+  // Refetch when parameters mutate
+  useEffect(() => {
+    fetchIssues();
+  }, [tab, filterCategory, filterStatus, debouncedSearch, page]);
 
   return (
     <div className="max-w-7xl mx-auto space-y-6">

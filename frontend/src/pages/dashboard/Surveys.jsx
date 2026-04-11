@@ -53,9 +53,11 @@ const Surveys = () => {
     }
   };
 
-  useEffect(() => {
-    fetchSurveys();
-  }, []);
+  const resetForm = () => {
+    setFormData({
+      title: '', description: '', category: 'Urban Planning', deadline: '', targetAudience: 'all', isImportant: false, options: [{ text: '' }, { text: '' }]
+    });
+  };
 
   const handleCreate = async (e) => {
     e.preventDefault();
@@ -82,12 +84,6 @@ const Surveys = () => {
     } catch (err) {
       showToast(err.response?.data?.message || 'Failed to update survey', 'error');
     }
-  };
-
-  const resetForm = () => {
-    setFormData({
-      title: '', description: '', category: 'Urban Planning', deadline: '', targetAudience: 'all', isImportant: false, options: [{ text: '' }, { text: '' }]
-    });
   };
 
   const openEditModal = (survey) => {
@@ -135,6 +131,10 @@ const Surveys = () => {
   };
   const addOption = () => setFormData({ ...formData, options: [...formData.options, { text: '' }] });
   const removeOption = (index) => setFormData({ ...formData, options: formData.options.filter((_, i) => i !== index) });
+
+  useEffect(() => {
+    fetchSurveys();
+  }, []);
 
   // Data processing
   const filteredData = surveys.filter(item => 
