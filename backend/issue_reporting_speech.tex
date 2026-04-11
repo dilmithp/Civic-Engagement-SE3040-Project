@@ -1,0 +1,107 @@
+\documentclass[12pt,a4paper]{article}
+\usepackage[margin=1in]{geometry}
+\usepackage{enumitem}
+\usepackage{parskip}
+\usepackage{titlesec}
+\usepackage{hyperref}
+\usepackage{xcolor}
+
+\titleformat{\section}{\large\bfseries}{}{0em}{}
+\titleformat{\subsection}{\normalsize\bfseries}{}{0em}{}
+
+\title{\textbf{Speech --- Issue Reporting Module}\\[4pt]
+\large Civic Engagement \& Sustainability Platform}
+\author{}
+\date{}
+
+\begin{document}
+\maketitle
+\thispagestyle{empty}
+
+% ── Estimated delivery time: 2–3 minutes ──
+
+\section*{Opening}
+
+Good day everyone. Today I would like to talk about the \textbf{Issue Reporting} module of our Civic Engagement and Sustainability Platform. This is one of the core features of our system. It allows citizens to report real-world community problems---such as potholes, broken streetlights, illegal dumping, and water leaks---directly through the platform. Admins and government officials can then track, manage, and resolve those reports. Let me walk you through how this module works.
+
+% ─────────────────────────────────────────────────────────────────
+\section{1. What Problem Does It Solve?}
+
+In most communities, citizens have no easy way to report civic issues to the authorities. They might call a government office, fill in paper forms, or simply give up. Our Issue Reporting module solves this by providing a \textbf{digital, map-based reporting system}. A citizen can drop a pin on a map, describe the problem, attach photos, and submit the report in under a minute. The system automatically converts the GPS coordinates into a readable address using reverse geocoding. This makes civic participation fast, simple, and accessible to everyone.
+
+% ─────────────────────────────────────────────────────────────────
+\section{2. How It Works --- The User Flow}
+
+The workflow is straightforward:
+
+\begin{enumerate}[nosep]
+    \item A \textbf{citizen} logs in, navigates to the issue reporting page, and fills in a form with the issue title, description, and category---choosing from categories like Pothole, Broken Streetlight, Water Leak, Garbage, Illegal Dumping, Noise, Vandalism, or Other.
+    \item The citizen \textbf{drops a pin on an interactive map} to mark the exact location. The system calls the \textbf{OpenStreetMap Nominatim API} to reverse-geocode those coordinates into a human-readable address automatically.
+    \item The citizen can \textbf{upload up to 5 images} as evidence. These images are stored in \textbf{Cloudinary}, a cloud-based image hosting service, so our own server is never burdened with large files.
+    \item Once submitted, the issue appears in the \textbf{public feed} with a status of \texttt{Pending}.
+    \item An \textbf{admin or official} reviews the report, updates its status to \texttt{In~Progress}, adds an official comment explaining what action is being taken, and eventually marks it as \texttt{Resolved}.
+    \item The original reporter also has the option to \textbf{withdraw} their own report if it is no longer relevant.
+\end{enumerate}
+
+% ─────────────────────────────────────────────────────────────────
+\section{3. The API Design}
+
+The module exposes a RESTful API at \texttt{/api/v1/issues} with the following key endpoints:
+
+\begin{itemize}[nosep]
+    \item \texttt{POST /} --- Create a new issue (authenticated citizens).
+    \item \texttt{GET /} --- Retrieve the public feed with \textbf{pagination}, \textbf{category filtering}, and \textbf{geospatial filtering} using MongoDB's \texttt{\$near} operator.
+    \item \texttt{GET /my-issues} --- Retrieve the logged-in user's own reports.
+    \item \texttt{GET /:id} --- View a single issue's full details.
+    \item \texttt{PATCH /:id/status} --- Update issue status (admin/official only).
+    \item \texttt{PATCH /:id/withdraw} --- Withdraw an issue (original reporter only).
+    \item \texttt{POST /:id/comments} --- Add an official comment (admin/official only).
+    \item \texttt{DELETE /:id} --- Delete an issue (reporter or admin).
+\end{itemize}
+
+All responses follow a consistent JSON envelope with \texttt{status}, \texttt{message}, and \texttt{data} fields.
+
+% ─────────────────────────────────────────────────────────────────
+\section{4. Data Model \& Database Design}
+
+The Issue model is one of the most complex schemas in our system. It stores:
+
+\begin{itemize}[nosep]
+    \item \textbf{Core fields}: title, description, category, and status.
+    \item A \textbf{GeoJSON location} sub-document with coordinates and address, enabling MongoDB's \texttt{2dsphere} geospatial queries so users can find nearby issues on a map.
+    \item An \textbf{images array} referencing Cloudinary URLs and public IDs.
+    \item A \textbf{status history} sub-schema that acts as a full audit trail---every status change is recorded with who made the change, an optional comment, and a timestamp.
+    \item A \textbf{comments} sub-schema for official responses from admins and officials.
+\end{itemize}
+
+We optimized query performance with compound indexes on reporter, status, category, and creation date.
+
+% ─────────────────────────────────────────────────────────────────
+\section{5. Status Workflow \& State Machine}
+
+A key design decision was implementing issue statuses as a \textbf{state machine}. An issue can be in one of four states: \texttt{Pending}, \texttt{In~Progress}, \texttt{Resolved}, or \texttt{Withdrawn}. Not every transition is allowed---for example, a resolved issue cannot go back to pending. We enforce this through an \texttt{ALLOWED\_TRANSITIONS} configuration map. This follows the \textbf{Open/Closed Principle}: if we ever need to add a new status, we simply update the configuration map without touching the transition logic itself.
+
+% ─────────────────────────────────────────────────────────────────
+\section{6. Security \& Access Control}
+
+We enforce strict role-based access control:
+
+\begin{itemize}[nosep]
+    \item \textbf{Public access}: Anyone can browse the issue feed and view individual issues.
+    \item \textbf{Authenticated citizens}: Can create, withdraw, and delete their own issues.
+    \item \textbf{Admins and officials}: Can update issue statuses and add official comments.
+\end{itemize}
+
+Authentication is handled via JWT tokens verified by the \texttt{protect} middleware, and role checks are enforced by the \texttt{authorize} middleware. Additionally, ownership validation ensures that only the reporter who created an issue can withdraw or delete it.
+
+% ─────────────────────────────────────────────────────────────────
+\section{7. Validation \& Error Handling}
+
+Every input is validated using \texttt{express-validator} before it reaches the business logic. We have dedicated validator sets for issue creation, status updates, comments, geospatial queries, and ID parameters. If validation fails, the user receives a clear \texttt{400 Bad Request} response. All errors are handled centrally through a custom \texttt{AppError} class and an \texttt{asyncHandler} wrapper that catches promise rejections and forwards them to a global error middleware.
+
+% ─────────────────────────────────────────────────────────────────
+\section*{Closing}
+
+To wrap up, the Issue Reporting module bridges the gap between citizens and local authorities. It provides a complete digital workflow---from reporting a problem with photos and GPS coordinates, to tracking official responses, all the way to resolution. The module integrates two third-party APIs, implements a robust state-machine for status transitions, enforces role-based security, and follows clean architecture with SOLID principles throughout. It is designed to make community engagement easy, transparent, and effective. Thank you.
+
+\end{document}

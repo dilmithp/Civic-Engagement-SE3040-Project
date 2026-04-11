@@ -1,0 +1,137 @@
+\documentclass[12pt,a4paper]{article}
+\usepackage[margin=1in]{geometry}
+\usepackage{enumitem}
+\usepackage{parskip}
+\usepackage{titlesec}
+\usepackage{hyperref}
+\usepackage{xcolor}
+
+\titleformat{\section}{\large\bfseries}{}{0em}{}
+\titleformat{\subsection}{\normalsize\bfseries}{}{0em}{}
+
+\title{\textbf{Viva Speech --- Software Architecture}\\[4pt]
+\large Civic Engagement \& Sustainability Platform}
+\author{}
+\date{}
+
+\begin{document}
+\maketitle
+\thispagestyle{empty}
+
+% ── Estimated delivery time: 2–3 minutes ──
+
+\section*{Opening}
+
+Good day. I would like to present the \textbf{software architecture} of our Civic Engagement and Sustainability Platform---both the overall system architecture and the backend architecture in detail. Our platform enables citizens to report community issues, participate in surveys, trade sustainable goods, and track green initiatives.
+
+% ─────────────────────────────────────────────────────────────────
+\section{1. Overall System Architecture}
+
+Our project follows the \textbf{MERN Stack} architecture, which consists of four core technologies:
+
+\begin{itemize}[nosep]
+    \item \textbf{MongoDB} --- A NoSQL document database hosted on MongoDB Atlas, accessed via the Mongoose ODM.
+    \item \textbf{Express.js} (v4.18) --- A Node.js web framework that powers our REST API server.
+    \item \textbf{React} (v18.2) --- A component-based JavaScript library for building the single-page frontend application.
+    \item \textbf{Node.js} --- The JavaScript runtime that executes our server-side code using ES Modules.
+\end{itemize}
+
+The system follows a \textbf{two-tier client-server} model. The React frontend, built and served by Vite, communicates with the Express backend exclusively through RESTful API endpoints. The backend then interacts with MongoDB and three external third-party services: \textbf{Cloudinary} for image storage, \textbf{OpenStreetMap Nominatim} for geocoding, and \textbf{Nodemailer} for email notifications. During development, Vite's built-in proxy forwards all \texttt{/api} requests from port 5173 to the backend on port 5000, avoiding any CORS issues.
+
+% ─────────────────────────────────────────────────────────────────
+\section{2. Backend Layered Architecture}
+
+The backend is structured using a \textbf{layered architecture} with strict separation of concerns. Every HTTP request flows through the following layers in order:
+
+\begin{enumerate}[nosep]
+    \item \textbf{Entry Point} (\texttt{server.js}) --- Boots the application, connects to MongoDB via \texttt{connectDB()}, starts the HTTP server, and handles unhandled promise rejections gracefully.
+    \item \textbf{Application Setup} (\texttt{app.js}) --- Configures Express middleware (CORS, JSON parser, URL-encoded parser, Morgan logger), mounts all route modules under versioned prefixes like \texttt{/api/v1/}, sets up Swagger API documentation at \texttt{/api-docs}, and registers 404 and global error handlers.
+    \item \textbf{Middleware Pipeline} --- Cross-cutting concerns processed before reaching route handlers: CORS, body parsing, request logging, JWT authentication (\texttt{protect}), and role-based authorization (\texttt{authorize}).
+    \item \textbf{Routes} (\texttt{src/routes/}) --- Define URL-to-controller mappings and attach middleware chains. Each feature has its own route file.
+    \item \textbf{Validators} (\texttt{src/validators/}) --- Input validation rules using \texttt{express-validator} that run before the controller.
+    \item \textbf{Controllers} (\texttt{src/controllers/}) --- Handle HTTP request and response concerns. They extract data from the request, call the appropriate service method, and send back a standardized JSON response.
+    \item \textbf{Services} (\texttt{src/services/}) --- Contain all business logic. Services interact with Mongoose models and external APIs. Controllers never access the database directly.
+    \item \textbf{Models} (\texttt{src/models/}) --- Define Mongoose schemas that map to MongoDB collections, including field validations, indexes, and relationships via ObjectId references.
+\end{enumerate}
+
+This separation means that if we need to swap a database, change a third-party service, or modify business rules, we only change the affected layer without impacting the rest.
+
+% ─────────────────────────────────────────────────────────────────
+\section{3. Feature Modules}
+
+The backend is organized into \textbf{six feature modules}, each following the same layered pattern (route $\rightarrow$ controller $\rightarrow$ service $\rightarrow$ model):
+
+\begin{itemize}[nosep]
+    \item \textbf{Authentication} (\texttt{/api/v1/auth}) --- User registration, login, and logout with JWT-based session management using \texttt{bcryptjs} for password hashing.
+    \item \textbf{Issue Reporting} (\texttt{/api/v1/issues}) --- Citizens report civic problems with images and geolocation. Supports status workflows (Pending $\rightarrow$ In Progress $\rightarrow$ Resolved/Withdrawn).
+    \item \textbf{Marketplace} (\texttt{/api/v1/marketplace}) --- Community marketplace for sustainable products with image uploads via Cloudinary.
+    \item \textbf{Surveys \& Voting} (\texttt{/api/v1/surveys}) --- Officials create polls, citizens vote, and email notifications are sent via Nodemailer.
+    \item \textbf{Green Initiatives} (\texttt{/api/v1/green-initiatives}) --- Track and promote community sustainability initiatives.
+    \item \textbf{Geocoding} (\texttt{/api/v1/geocode}) --- Forward and reverse geocoding using the OpenStreetMap Nominatim API.
+\end{itemize}
+
+% ─────────────────────────────────────────────────────────────────
+\section{4. Authentication \& Role-Based Access Control}
+
+Security is implemented through two middleware functions in \texttt{auth.middleware.js}:
+
+\begin{itemize}[nosep]
+    \item \textbf{\texttt{protect}} --- Extracts the JWT from the \texttt{Authorization: Bearer <token>} header, verifies it using the HS256 algorithm, validates that the token contains \texttt{id} and \texttt{role} claims, and attaches the decoded user object to \texttt{req.user}.
+    \item \textbf{\texttt{authorize(...roles)}} --- Accepts a list of allowed roles and checks if \texttt{req.user.role} is included. If not, it returns a \texttt{403 Forbidden} error.
+\end{itemize}
+
+We have three user roles with escalating privileges:
+
+\begin{itemize}[nosep]
+    \item \textbf{Citizen} --- Can report issues, vote on surveys, browse the marketplace, and view green initiatives.
+    \item \textbf{Official} --- All citizen capabilities plus creating and managing surveys, updating issue statuses, and moderating marketplace listings.
+    \item \textbf{Admin} --- Full system access including user management and complete CRUD on all resources.
+\end{itemize}
+
+% ─────────────────────────────────────────────────────────────────
+\section{5. Third-Party Service Integration}
+
+Our backend integrates three external services:
+
+\begin{itemize}[nosep]
+    \item \textbf{Cloudinary} --- Used for cloud-based image storage. Files are uploaded via Multer with a Cloudinary storage engine. The \texttt{CloudinaryService} class abstracts image extraction, single deletion, and batch deletion operations. This is used by both the Issue Reporting and Marketplace modules.
+    \item \textbf{OpenStreetMap Nominatim} --- A free geocoding API. The \texttt{GeocodingService} class provides \texttt{reverseGeocode()} to convert GPS coordinates into addresses and \texttt{forwardGeocode()} to convert addresses into coordinates. No API key is required.
+    \item \textbf{Nodemailer} --- Sends SMTP email notifications. The \texttt{mailer.js} utility sends HTML-formatted emails when new surveys are published and when surveys are about to close.
+\end{itemize}
+
+Each service is wrapped in a dedicated class following the \textbf{Dependency Inversion Principle}---consumers depend on the service abstraction, not on the SDK or HTTP call directly.
+
+% ─────────────────────────────────────────────────────────────────
+\section{6. Error Handling \& Configuration}
+
+We implemented a centralized error-handling strategy:
+
+\begin{itemize}[nosep]
+    \item A custom \texttt{AppError} class carries a human-readable message and an HTTP status code.
+    \item The \texttt{asyncHandler} utility wraps every async route handler to catch rejected promises automatically.
+    \item A global \texttt{errorMiddleware} at the end of the middleware stack catches all errors and returns a clean JSON response.
+    \item Unhandled promise rejections at the process level are caught in \texttt{server.js}, which logs the error and shuts down the server gracefully.
+\end{itemize}
+
+All environment-specific configuration (database URI, JWT secret, API keys, mail credentials) is loaded via \texttt{dotenv} and exported from a single \texttt{env.js} file, ensuring no \texttt{process.env} calls are scattered throughout the business logic.
+
+% ─────────────────────────────────────────────────────────────────
+\section{7. Design Patterns \& SOLID Principles}
+
+Throughout the backend, we applied several design patterns and SOLID principles:
+
+\begin{itemize}[nosep]
+    \item \textbf{Layered Architecture} --- Routes $\rightarrow$ Controllers $\rightarrow$ Services $\rightarrow$ Models, with each layer having a single, well-defined responsibility.
+    \item \textbf{Single Responsibility Principle} --- Each file handles one concern. Controllers handle HTTP; services handle business logic; models define data structure.
+    \item \textbf{Open/Closed Principle} --- Issue status transitions are driven by a configuration map (\texttt{ALLOWED\_TRANSITIONS}). New statuses can be added without modifying the transition logic code.
+    \item \textbf{Dependency Inversion Principle} --- Controllers depend on service abstractions. The \texttt{CloudinaryService} can be swapped for an S3 or local storage service without changing any consumer code.
+    \item \textbf{API Versioning} --- All routes are prefixed with \texttt{/api/v1/}, allowing backward-compatible evolution of the API.
+    \item \textbf{Swagger Documentation} --- The API is self-documented via a \texttt{swagger.yaml} file served at \texttt{/api-docs}.
+\end{itemize}
+
+% ─────────────────────────────────────────────────────────────────
+\section*{Closing}
+
+In summary, our Civic Engagement Platform is built on the MERN stack with a clean, layered backend architecture. The backend separates concerns across routes, controllers, services, and models. It enforces security through JWT authentication and role-based access control with three user roles. It integrates three third-party services---Cloudinary, Nominatim, and Nodemailer---each wrapped in dedicated service classes. And it follows SOLID principles and best practices including centralized error handling, input validation, API versioning, and environment-based configuration. Thank you.
+
+\end{document}

@@ -1,0 +1,36 @@
+name: Deploy Backend to EC2
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Deploy to EC2
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USER }}
+          key: ${{ secrets.EC2_SSH_KEY }}
+          script: |
+            export NVM_DIR="$HOME/.nvm"
+            source "$NVM_DIR/nvm.sh"
+            nvm use 20
+            cd /home/ubuntu/Civic-Engagement-SE3040-Project/backend
+            
+            # Force server to match repository exactly (fixes "local changes" error)
+            git fetch --all
+            git reset --hard origin/main
+            
+            npm install
+            
+            # Handles initial start OR reload safely
+            pm2 startOrReload ecosystem.config.cjs --only civic-backend --update-env
+            pm2 save
