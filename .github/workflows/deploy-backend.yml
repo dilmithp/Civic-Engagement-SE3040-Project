@@ -26,6 +26,5 @@ jobs:
             cd /home/ubuntu/Civic-Engagement-SE3040-Project/backend
             git pull origin main
             npm install
-            npm run build
             pm2 restart civic-backend --update-env
             pm2 save
