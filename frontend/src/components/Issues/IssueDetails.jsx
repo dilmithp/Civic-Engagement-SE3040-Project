@@ -197,7 +197,7 @@ const IssueDetails = () => {
                   <div key={i} className="bg-background border border-border p-4 rounded-lg">
                     <div className="flex justify-between items-start mb-2">
                       <span className="font-medium text-sm text-textMain">{c.authorName || 'Official'}</span>
-                      <span className="text-xs text-textMuted">{new Date(c.createdAt).toLocaleDateString()}</span>
+                      <span className="text-xs text-textMuted">{new Date(c.timestamp).toLocaleDateString()}</span>
                     </div>
                     <p className="text-sm text-textMain">{c.text}</p>
                   </div>
