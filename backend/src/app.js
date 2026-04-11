@@ -31,6 +31,7 @@ app.use(express.urlencoded({ extended: true }));
 app.use(morgan('dev'));
 
 // API Routes
+app.use('/api/v1/auth', authRoutes);
 app.use('/api/v1/green-initiatives', greenInitiativeRoutes);
 app.use('/api/v1/issues', issueRoutes);
 app.use('/api/v1/marketplace', marketplaceRoutes);
