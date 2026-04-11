@@ -24,7 +24,13 @@ jobs:
             source "$NVM_DIR/nvm.sh"
             nvm use 20
             cd /home/ubuntu/Civic-Engagement-SE3040-Project/backend
-            git pull origin main
+            
+            # Force server to match repository exactly (fixes "local changes" error)
+            git fetch --all
+            git reset --hard origin/main
+            
             npm install
-            pm2 restart civic-backend --update-env
+            
+            # Handles initial start OR reload safely
+            pm2 startOrReload ecosystem.config.cjs --only civic-backend --update-env
             pm2 save

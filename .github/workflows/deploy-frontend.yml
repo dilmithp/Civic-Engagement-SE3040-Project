@@ -24,8 +24,11 @@ jobs:
             source "$NVM_DIR/nvm.sh"
             nvm use 20
             cd /home/ubuntu/Civic-Engagement-SE3040-Project/frontend
-            git pull origin main
+            
+            # Force server to match repository exactly
+            git fetch --all
+            git reset --hard origin/main
+            
             npm install
             npm run build
-            pm2 restart civic-frontend --update-env || true
-            pm2 save
+            # Note: Served via Nginx static root, no PM2 needed
