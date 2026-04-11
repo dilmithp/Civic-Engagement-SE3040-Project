@@ -35,27 +35,6 @@ const AppRoutes = () => {
       <Route path="/register" element={<Register />} />
       <Route path="/unauthorized" element={<Unauthorized />} />
 
-      {/* Green Initiatives — Public */}
-      <Route path="/green-initiatives" element={<GreenInitiativeList />} />
-      <Route path="/green-initiatives/:id" element={<InitiativeDetails />} />
-
-      {/* Green Initiatives — Protected (outside dashboard layout) */}
-      <Route
-        path="/green-initiatives/create"
-        element={
-          <ProtectedRoute>
-            <CreateInitiativeForm />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/green-initiatives/edit/:id"
-        element={
-          <ProtectedRoute>
-            <EditInitiativeForm />
-          </ProtectedRoute>
-        }
-      />
 
       {/* Protected Dashboard Routes */}
       <Route
@@ -70,6 +49,12 @@ const AppRoutes = () => {
 
         {/* Surveys — Dilmith */}
         <Route path="surveys" element={<Surveys />} />
+
+        {/* Green Initiatives */}
+        <Route path="initiatives" element={<GreenInitiativeList />} />
+       <Route path="initiatives/:id" element={<InitiativeDetails />} />
+       <Route path="initiatives/create" element={<ProtectedRoute><CreateInitiativeForm /></ProtectedRoute>} />
+       <Route path="initiatives/edit/:id" element={<ProtectedRoute><EditInitiativeForm /></ProtectedRoute>} />
 
         {/* Issues — nested under dashboard */}
         <Route path="issues" element={<IssueList />} />
