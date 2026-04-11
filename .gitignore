@@ -29,5 +29,5 @@ Thumbs.db
 
 # Testing
 coverage/
-acquisitions
+/acquisitions
 /reports
