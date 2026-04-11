@@ -9,6 +9,11 @@ const GreenInitiativeList = () => {
     const [error, setError] = useState(null);
     const [deleteTarget, setDeleteTarget] = useState(null);
     const [deleting, setDeleting] = useState(false);
+    
+    // Filter States
+    const [searchTerm, setSearchTerm] = useState('');
+    const [statusFilter, setStatusFilter] = useState('All');
+    
     const { user } = useAuth();
 
     useEffect(() => { fetchInitiatives(); }, []);
@@ -40,9 +45,26 @@ const GreenInitiativeList = () => {
         }
     };
 
+    // Derived state for filtering (Now includes description!)
+    const filteredInitiatives = initiatives.filter(initiative => {
+        const searchLower = searchTerm.toLowerCase();
+        
+        // Search matches title, location, OR description
+        const searchMatch = 
+            initiative.title.toLowerCase().includes(searchLower) || 
+            initiative.location.toLowerCase().includes(searchLower) ||
+            initiative.description.toLowerCase().includes(searchLower);
+        
+        // Status matches exactly, or 'All' is selected
+        const statusMatch = statusFilter === 'All' || initiative.status === statusFilter;
+        
+        return searchMatch && statusMatch;
+    });
+
     const getStatusStyle = (status) => {
         switch (status) {
             case 'Upcoming':  return 'bg-sky-100 text-sky-700 dark:bg-sky-900/30 dark:text-sky-300';
+            case 'Upcoming (Weather Alert)': return 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300';
             case 'Ongoing':   return 'bg-primary-100 text-primary-700 dark:bg-primary-900/30 dark:text-primary-300';
             case 'Completed': return 'bg-primary-50 text-textMuted dark:bg-primary-900/20';
             default:          return 'bg-primary-50 text-textMuted';
@@ -52,6 +74,7 @@ const GreenInitiativeList = () => {
     const getAccentBar = (status) => {
         switch (status) {
             case 'Upcoming':  return 'bg-sky-400';
+            case 'Upcoming (Weather Alert)': return 'bg-amber-500';
             case 'Ongoing':   return 'bg-primary-500';
             case 'Completed': return 'bg-primary-300';
             default:          return 'bg-primary-300';
@@ -91,7 +114,7 @@ const GreenInitiativeList = () => {
         <div className="max-w-7xl mx-auto space-y-6">
             {/* Delete Modal */}
             {deleteTarget && (
-                <div className="modal-backdrop">
+                <div className="modal-backdrop z-50">
                     <div className="modal">
                         <div className="modal-header">
                             <h3 className="text-lg font-extrabold text-textMain">Delete Initiative</h3>
@@ -112,7 +135,7 @@ const GreenInitiativeList = () => {
             )}
 
             {/* Header */}
-            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-border pb-4">
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                 <div>
                     <div className="flex items-center gap-2 mb-1">
                         <span className="text-2xl">🌿</span>
@@ -122,26 +145,70 @@ const GreenInitiativeList = () => {
                 </div>
                 <Link
                     to="/dashboard/initiatives/create"
-                    className="btn btn-default btn-primary whitespace-nowrap"
+                    className="btn btn-default btn-primary whitespace-nowrap shadow-sm"
                 >
                     + New Initiative
                 </Link>
             </div>
 
+            {/* Filter Bar */}
+            {initiatives.length > 0 && (
+                <div className="flex flex-col sm:flex-row gap-4 bg-surface p-4 rounded-xl border border-border">
+                    <div className="relative flex-grow">
+                        <span className="absolute inset-y-0 left-0 pl-3 flex items-center text-textMuted">
+                            🔍
+                        </span>
+                        <input
+                            type="text"
+                            placeholder="Search by title, location, or description..."
+                            value={searchTerm}
+                            onChange={(e) => setSearchTerm(e.target.value)}
+                            className="w-full pl-10 pr-4 py-2 border border-border rounded-lg bg-surfaceHover focus:outline-none focus:ring-2 focus:ring-primary-500 text-sm text-textMain"
+                        />
+                    </div>
+                    <select
+                        value={statusFilter}
+                        onChange={(e) => setStatusFilter(e.target.value)}
+                        className="py-2 px-4 border border-border rounded-lg bg-surfaceHover focus:outline-none focus:ring-2 focus:ring-primary-500 text-sm text-textMain cursor-pointer sm:w-48"
+                    >
+                        <option value="All">All Statuses</option>
+                        <option value="Upcoming">Upcoming</option>
+                        <option value="Ongoing">Ongoing</option>
+                        <option value="Completed">Completed</option>
+                        <option value="Upcoming (Weather Alert)">Weather Alerts ⚠️</option>
+                    </select>
+                </div>
+            )}
+
             {/* Grid */}
             {initiatives.length === 0 ? (
-                <div className="empty-state">
+                // State 1: Nothing in the database at all
+                <div className="empty-state py-20 text-center border border-border rounded-2xl bg-surface">
                     <div className="text-5xl mb-4">🌱</div>
                     <h3 className="text-xl font-bold text-textMain mb-1">No initiatives yet</h3>
                     <p className="text-textMuted mb-6">Be the first to organise a community green event.</p>
-                    <Link to="/dashboard/initiatives/create" className="btn btn-default btn-primary">Create one now</Link>
+                    <Link to="/dashboard/initiatives/create" className="btn btn-default btn-primary inline-flex">Create one now</Link>
+                </div>
+            ) : filteredInitiatives.length === 0 ? (
+                // State 2: Database has items, but search/filter turned up empty
+                <div className="empty-state py-20 text-center border border-border rounded-2xl bg-surface">
+                    <div className="text-5xl mb-4">🔍</div>
+                    <h3 className="text-xl font-bold text-textMain mb-1">No matches found</h3>
+                    <p className="text-textMuted mb-6">We couldn't find any initiatives matching your search or filter.</p>
+                    <button 
+                        onClick={() => { setSearchTerm(''); setStatusFilter('All'); }} 
+                        className="btn btn-default btn-secondary inline-flex"
+                    >
+                        Clear Filters
+                    </button>
                 </div>
             ) : (
+                // State 3: Show filtered results
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {initiatives.map((initiative) => {
+                    {filteredInitiatives.map((initiative) => {
                         const canEditOrDelete = user && (user.id === initiative.organizer || user._id === initiative.organizer || user.role === 'admin');
                         return (
-                            <div key={initiative._id} className="card flex flex-col hover:shadow-md transition-shadow group">
+                            <div key={initiative._id} className="card flex flex-col hover:shadow-md transition-shadow group bg-surface border border-border rounded-2xl overflow-hidden">
                                 <div className={`h-1.5 w-full ${getAccentBar(initiative.status)}`} />
                                 <div className="p-6 flex-grow">
                                     <div className="flex justify-between items-start gap-3 mb-3">
@@ -150,7 +217,7 @@ const GreenInitiativeList = () => {
                                                 {initiative.title}
                                             </h2>
                                             {initiative.isOfficial && (
-                                                <span className="badge badge-teal w-max">
+                                                <span className="badge badge-teal w-max px-2 py-0.5 text-xs rounded-md bg-teal-50 text-teal-700 border border-teal-200">
                                                     ✓ City Endorsed
                                                 </span>
                                             )}
@@ -177,8 +244,8 @@ const GreenInitiativeList = () => {
                                     </Link>
                                     {canEditOrDelete && (
                                         <div className="flex items-center gap-1">
-                                            <Link to={`/dashboard/initiatives/edit/${initiative._id}`} className="btn btn-sm btn-ghost">Edit</Link>
-                                            <button onClick={() => setDeleteTarget({ id: initiative._id, title: initiative.title })} className="btn btn-sm btn-ghost text-red-500 hover:text-red-700 hover:bg-red-50">Delete</button>
+                                            <Link to={`/dashboard/initiatives/edit/${initiative._id}`} className="btn btn-sm btn-ghost px-3 py-1.5 text-sm rounded hover:bg-surface">Edit</Link>
+                                            <button onClick={() => setDeleteTarget({ id: initiative._id, title: initiative.title })} className="btn btn-sm btn-ghost px-3 py-1.5 text-sm rounded text-red-500 hover:text-red-700 hover:bg-red-50">Delete</button>
                                         </div>
                                     )}
                                 </div>
