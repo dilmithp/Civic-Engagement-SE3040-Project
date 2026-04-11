@@ -1,0 +1,153 @@
+config:
+  # ─── Target server (must be running before executing this test) ────────────
+  target: "http://localhost:5002"
+  http:
+    timeout: 10  # seconds before a request is considered failed
+
+  # ─── Load Phases ──────────────────────────────────────────────────────────
+  # Phase 1: Warm-up — 5 virtual users arriving per second for 30 seconds
+  # Phase 2: Ramp-up — scale from 5 to 50 VUs over 60 seconds
+  # Phase 3: Sustained peak — hold 50 VUs/sec for 60 seconds
+  phases:
+    - name: "Warm-up"
+      duration: 30
+      arrivalRate: 5
+
+    - name: "Ramp-up"
+      duration: 60
+      arrivalRate: 5
+      rampTo: 50
+
+    - name: "Peak Load"
+      duration: 60
+      arrivalRate: 50
+
+  # ─── Variables (shared across scenarios) ─────────────────────────────────
+  variables:
+    # Replace this with a real JWT signed with your JWT_SECRET for citizen role
+    citizenToken: "REPLACE_WITH_VALID_CITIZEN_JWT"
+    adminToken: "REPLACE_WITH_VALID_ADMIN_JWT"
+
+  # ─── Thresholds (test will fail if these are breached) ───────────────────
+  ensure:
+    - expression: "p95 < 500"     # 95th percentile response time < 500ms
+      description: "p95 latency under 500ms"
+    - expression: "vusers.failed / vusers.created < 0.01"
+      description: "Error rate under 1%"
+
+# ─── Scenarios ───────────────────────────────────────────────────────────────
+scenarios:
+  # ── Scenario 1: Public Issue Feed (GET) ────────────────────────────────
+  - name: "Browse Public Issues Feed"
+    weight: 40
+    flow:
+      - get:
+          url: "/api/v1/issues"
+          expect:
+            - statusCode: 200
+
+      - get:
+          url: "/api/v1/issues"
+          qs:
+            category: "Pothole"
+            page: 1
+            limit: 10
+          expect:
+            - statusCode: 200
+
+      - get:
+          url: "/api/v1/issues"
+          qs:
+            search: "broken"
+          expect:
+            - statusCode: 200
+
+  # ── Scenario 2: Create + Retrieve Issue (authenticated citizen) ─────────
+  - name: "Create and Retrieve Issue"
+    weight: 35
+    flow:
+      - post:
+          url: "/api/v1/issues"
+          headers:
+            Authorization: "Bearer {{ citizenToken }}"
+            Content-Type: "application/json"
+          json:
+            title: "Performance Test Pothole {{ $randomString() }}"
+            description: "A large pothole spotted during performance testing on {{ $timestamp }}."
+            category: "Pothole"
+            latitude: "6.9271"
+            longitude: "80.2707"
+            address: "Colombo, Sri Lanka"
+          capture:
+            - json: "$.data._id"
+              as: "issueId"
+          expect:
+            - statusCode: 201
+
+      - get:
+          url: "/api/v1/issues/{{ issueId }}"
+          expect:
+            - statusCode: 200
+
+      - get:
+          url: "/api/v1/issues/my-issues"
+          headers:
+            Authorization: "Bearer {{ citizenToken }}"
+          expect:
+            - statusCode: 200
+
+  # ── Scenario 3: Admin Status Update Flow ───────────────────────────────
+  - name: "Admin Status Update Flow"
+    weight: 15
+    flow:
+      # First create a fresh issue as citizen
+      - post:
+          url: "/api/v1/issues"
+          headers:
+            Authorization: "Bearer {{ citizenToken }}"
+            Content-Type: "application/json"
+          json:
+            title: "Status Update Perf Test {{ $randomString() }}"
+            description: "Testing status transitions under load."
+            category: "Water Leak"
+            latitude: "6.9271"
+            longitude: "80.2707"
+            address: "Load Test City"
+          capture:
+            - json: "$.data._id"
+              as: "newIssueId"
+          expect:
+            - statusCode: 201
+
+      # Admin moves it to In Progress
+      - patch:
+          url: "/api/v1/issues/{{ newIssueId }}/status"
+          headers:
+            Authorization: "Bearer {{ adminToken }}"
+            Content-Type: "application/json"
+          json:
+            status: "In Progress"
+            comment: "Performance test — moving to In Progress"
+          expect:
+            - statusCode: 200
+
+  # ── Scenario 4: Error Handling Under Load (expected 404/401) ───────────
+  - name: "Error Scenarios (graceful degradation check)"
+    weight: 10
+    flow:
+      - get:
+          url: "/api/v1/issues/000000000000000000000000"
+          expect:
+            - statusCode: 404
+
+      - post:
+          url: "/api/v1/issues"
+          # No auth token — should get 401
+          json:
+            title: "Unauthorized Issue"
+            description: "Should be rejected."
+            category: "Pothole"
+            latitude: "6.9271"
+            longitude: "80.2707"
+          expect:
+            - statusCode: 401
