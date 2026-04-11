@@ -9,6 +9,7 @@ import issueRoutes from './routes/issue.routes.js';
 import marketplaceRoutes from './routes/marketplace.routes.js';
 import surveyRoutes from './routes/survey.routes.js';
 import geocodingRoutes from './routes/geocoding.routes.js';
+import dashboardRoutes from './routes/dashboard.routes.js';
 import swaggerUi from 'swagger-ui-express';
 import YAML from 'yamljs';
 import { createRequire } from 'module';
@@ -30,11 +31,13 @@ app.use(express.urlencoded({ extended: true }));
 app.use(morgan('dev'));
 
 // API Routes
+app.use('/api/v1/auth', authRoutes);
 app.use('/api/v1/green-initiatives', greenInitiativeRoutes);
 app.use('/api/v1/issues', issueRoutes);
 app.use('/api/v1/marketplace', marketplaceRoutes);
 app.use('/api/v1/surveys', surveyRoutes);
 app.use('/api/v1/geocode', geocodingRoutes);
+app.use('/api/v1/dashboard', dashboardRoutes);
 
 app.get('/health', (req, res) => {
     res.status(200).json({ status: 'success', message: 'Server is healthy' });
