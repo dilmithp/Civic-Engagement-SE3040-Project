@@ -17,5 +17,8 @@ export const ENDPOINTS = {
   GEOCODE: {
     FORWARD: '/geocode/forward',
     REVERSE: '/geocode/reverse',
+  },
+  DASHBOARD: {
+    STATS: '/dashboard/stats'
   }
 };
