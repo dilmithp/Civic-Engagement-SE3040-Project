@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
 import { issueService } from '../../services/issueService';
+import { useUI } from '../../context/UIContext';
 import { MapPin, Clock, ArrowLeft, Loader, MessageSquare, AlertCircle, Trash2, CheckCircle2 } from 'lucide-react';
 
 const STATUS_OPTIONS = ['Pending', 'In Progress', 'Resolved', 'Withdrawn'];
@@ -17,6 +18,7 @@ const IssueDetails = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { setPageTitle } = useUI();
   
   const [issue, setIssue] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -31,6 +33,14 @@ const IssueDetails = () => {
   useEffect(() => {
     fetchIssue();
   }, [id]);
+
+  // Update dynamic breadcrumb title
+  useEffect(() => {
+    if (issue?.title) {
+      setPageTitle(issue.title);
+    }
+    return () => setPageTitle('');
+  }, [issue, setPageTitle]);
 
   const fetchIssue = async () => {
     try {

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams, Link } from 'react-router-dom';
 import { ImagePlus, X, Loader, ArrowLeft, MapPin, Search } from 'lucide-react';
 import { issueService } from '../../services/issueService';
+import { useUI } from '../../context/UIContext';
 import LocationPickerMap from './LocationPickerMap';
 
 const CATEGORIES = [
@@ -18,7 +19,22 @@ const CATEGORIES = [
 const IssueForm = () => {
   const navigate = useNavigate();
   const { id } = useParams();
+  const { setPageTitle } = useUI();
   const isEditMode = Boolean(id);
+
+  // Set breadcrumb title based on mode
+  useEffect(() => {
+    if (isEditMode) {
+      if (formData.title) {
+        setPageTitle(`Edit: ${formData.title}`);
+      } else {
+        setPageTitle('Edit Report');
+      }
+    } else {
+      setPageTitle('Submit New Issue');
+    }
+    return () => setPageTitle('');
+  }, [isEditMode, formData.title, setPageTitle]);
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
