@@ -1,0 +1,124 @@
+\documentclass[12pt,a4paper]{article}
+\usepackage[margin=1in]{geometry}
+\usepackage{enumitem}
+\usepackage{parskip}
+\usepackage{titlesec}
+\usepackage{hyperref}
+\usepackage{xcolor}
+
+\titleformat{\section}{\large\bfseries}{}{0em}{}
+\titleformat{\subsection}{\normalsize\bfseries}{}{0em}{}
+
+\title{\textbf{Viva Speech --- Issue Reporting Module}\\[4pt]
+\large Civic Engagement \& Sustainability Platform}
+\author{}
+\date{}
+
+\begin{document}
+\maketitle
+\thispagestyle{empty}
+
+% ── Estimated delivery time: 2–3 minutes ──
+% ── You are the 2nd presenter ──
+
+\section*{Opening}
+
+Thank you. I am [YOUR NAME], and I was responsible for the \textbf{Issue Reporting} module of our Civic Engagement and Sustainability Platform. This module lets citizens report community problems such as potholes, broken streetlights, illegal dumping, and water leaks, and it lets admins and officials manage those reports. Let me walk you through my implementation across the six key areas.
+
+% ─────────────────────────────────────────────────────────────────
+\section{1. REST Endpoints \& CRUD Operations}
+
+My Issue Reporting API is mounted at \texttt{/api/v1/issues} and exposes the following REST endpoints using standard HTTP methods:
+
+\begin{itemize}[nosep]
+    \item \texttt{GET /} --- Retrieve the public feed of all active issues (with pagination, category filtering, and geospatial filtering).
+    \item \texttt{GET /my-issues} --- Retrieve the authenticated user's own reported issues.
+    \item \texttt{GET /:id} --- Retrieve a single issue by its ID.
+    \item \texttt{POST /} --- Create a new issue report (with up to 5 image uploads).
+    \item \texttt{PATCH /:id/status} --- Update the status of an issue (admin/official only).
+    \item \texttt{PATCH /:id/withdraw} --- Withdraw an issue (original reporter only).
+    \item \texttt{POST /:id/comments} --- Add an official comment to an issue (admin/official only).
+    \item \texttt{DELETE /:id} --- Delete an issue (reporter or admin).
+\end{itemize}
+
+Each endpoint returns appropriate HTTP status codes: \texttt{201} for successful creation, \texttt{200} for retrieval and updates, \texttt{400} for invalid requests, \texttt{401} for unauthenticated access, \texttt{403} for unauthorized roles, and \texttt{404} when an issue is not found. All responses follow a consistent JSON envelope with \texttt{status}, \texttt{message}, and \texttt{data} fields using a \texttt{sendSuccess} utility.
+
+% ─────────────────────────────────────────────────────────────────
+\section{2. Third-Party API Integration}
+
+My module integrates two third-party services:
+
+\begin{itemize}[nosep]
+    \item \textbf{OpenStreetMap Nominatim API} --- When a citizen reports an issue by dropping a pin on the map, the system automatically performs \emph{reverse geocoding} to convert the GPS coordinates into a human-readable address. This is done inside the \texttt{IssueService.createIssue} method by calling \texttt{GeocodingService.reverseGeocode()}. If the API call fails, the issue is still created gracefully without an address.
+    \item \textbf{Cloudinary} --- Used for image storage. Citizens can upload up to 5 images per issue. Files are uploaded via Multer with a Cloudinary storage engine. The \texttt{CloudinaryService} extracts image URLs and public IDs. When an issue is deleted, the service also cleans up all associated images from Cloudinary using batch deletion.
+\end{itemize}
+
+% ─────────────────────────────────────────────────────────────────
+\section{3. MongoDB Database Integration}
+
+The \textbf{Issue model} is built with Mongoose and is one of the more complex schemas in our system. It includes:
+
+\begin{itemize}[nosep]
+    \item Core fields: \texttt{title}, \texttt{description}, \texttt{category} (enum of 8 categories like Pothole, Broken Streetlight, etc.), and \texttt{status} (Pending, In Progress, Resolved, Withdrawn).
+    \item A \textbf{GeoJSON location} sub-document with \texttt{type: Point} and \texttt{coordinates}, which enables geospatial queries using MongoDB's \texttt{\$near} operator.
+    \item An \texttt{images} array using a sub-schema that stores each image's Cloudinary \texttt{url} and \texttt{publicId}.
+    \item A \texttt{statusHistory} sub-schema array that acts as an \textbf{audit trail}, recording every status change with the user who made it, a comment, and a timestamp.
+    \item A \texttt{comments} sub-schema for official responses from admins and officials.
+\end{itemize}
+
+For performance, I defined a \texttt{2dsphere} index on the location field for geospatial queries, plus compound indexes on \texttt{(reporter, createdAt)}, \texttt{(status, category)}, and \texttt{createdAt} for common query patterns. I also integrated \texttt{mongoose-paginate-v2} for efficient server-side pagination.
+
+% ─────────────────────────────────────────────────────────────────
+\section{4. Protected Routes \& Role-Based Access}
+
+My routes are grouped by access level following the \textbf{Interface Segregation Principle}:
+
+\begin{itemize}[nosep]
+    \item \textbf{Public routes} (no authentication): Viewing the public issue feed (\texttt{GET /}) and viewing a single issue (\texttt{GET /:id}).
+    \item \textbf{Authenticated routes} (\texttt{protect} middleware): Creating issues, withdrawing issues, deleting issues, and viewing your own issues.
+    \item \textbf{Admin/Official routes} (\texttt{authorize('admin', 'official')}): Updating issue status and adding official comments.
+\end{itemize}
+
+The \texttt{protect} middleware verifies the JWT Bearer token and attaches the user's \texttt{id}, \texttt{email}, and \texttt{role} to the request. The \texttt{authorize} middleware then checks if the user's role is in the allowed list, returning a \texttt{403} error if not. Additionally, the withdraw function has \textbf{ownership validation}---only the original reporter can withdraw their own issue, enforced in the service layer.
+
+% ─────────────────────────────────────────────────────────────────
+\section{5. Validation \& Error Handling}
+
+I implemented thorough \textbf{input validation} using \texttt{express-validator} with five dedicated validator sets:
+
+\begin{itemize}[nosep]
+    \item \textbf{createIssueValidator} --- validates title (max 100 chars), description (max 1000 chars), category (must be one of 8 predefined values), longitude ($-180$ to $180$), latitude ($-90$ to $90$), and optional address.
+    \item \textbf{updateStatusValidator} --- validates the issue ID is a valid MongoDB ObjectId, status is a valid enum value, and optional comment.
+    \item \textbf{addCommentValidator} --- validates ID and comment text (max 500 chars).
+    \item \textbf{getPublicIssuesValidator} --- validates query parameters for pagination, category filtering, and geospatial parameters.
+    \item \textbf{issueIdValidator} --- validates that the \texttt{:id} param is a valid MongoId.
+\end{itemize}
+
+For \textbf{error handling}, the service layer throws custom \texttt{AppError} instances with appropriate status codes. The \texttt{asyncHandler} wrapper catches all promise rejections and forwards them to the global error middleware, which returns clean JSON error responses. In the issue status update logic, I also enforce a \textbf{state-machine pattern}---the \texttt{ALLOWED\_TRANSITIONS} config map defines which status transitions are valid, and invalid transitions return a \texttt{400} error.
+
+% ─────────────────────────────────────────────────────────────────
+\section{6. Clean Architecture \& Best Practices}
+
+My Issue Reporting module follows a \textbf{layered architecture} with clear separation of concerns:
+
+\begin{itemize}[nosep]
+    \item \textbf{Routes} (\texttt{issue.routes.js}) --- define URL mappings and middleware chains only.
+    \item \textbf{Controller} (\texttt{issue.controller.js}) --- handles HTTP request/response, delegates to the service.
+    \item \textbf{Service} (\texttt{issue.service.js}) --- contains all business logic, 288 lines covering seven operations.
+    \item \textbf{Model} (\texttt{Issue.model.js}) --- defines the Mongoose schema with sub-schemas and indexes.
+    \item \textbf{Validators} (\texttt{issue.validators.js}) --- separated validation rules.
+\end{itemize}
+
+I applied SOLID principles:
+\begin{itemize}[nosep]
+    \item \textbf{Single Responsibility} --- each file has one job. The controller only handles HTTP concerns; the service only handles business logic.
+    \item \textbf{Open/Closed} --- status transitions are config-driven via the \texttt{ALLOWED\_TRANSITIONS} map. New statuses can be added without modifying the transition logic.
+    \item \textbf{Dependency Inversion} --- the controller depends on \texttt{IssueService}, not on Mongoose directly. The service depends on \texttt{CloudinaryService} and \texttt{GeocodingService}, which can be swapped out without changing the issue logic.
+\end{itemize}
+
+% ─────────────────────────────────────────────────────────────────
+\section*{Closing}
+
+To summarize, my Issue Reporting module provides a complete set of REST endpoints with full CRUD operations, integrates Nominatim for geocoding and Cloudinary for image management, uses a rich MongoDB schema with geospatial indexing and audit trails, enforces role-based access control at multiple levels, implements comprehensive validation with a state-machine pattern for status transitions, and follows clean architecture with SOLID principles throughout. Thank you.
+
+\end{document}

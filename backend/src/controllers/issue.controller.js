@@ -23,6 +23,21 @@ export const createIssue = asyncHandler(async (req, res) => {
 });
 
 /**
+ * @desc    Update an existing issue (Edit Mode)
+ * @route   PUT /api/v1/issues/:id
+ * @access  Private (original reporter)
+ */
+export const updateIssue = asyncHandler(async (req, res) => {
+    const issue = await IssueService.updateIssue(
+        req.params.id,
+        req.user.id,
+        req.body
+    );
+
+    sendSuccess(res, 200, issue, 'Issue updated successfully');
+});
+
+/**
  * @desc    Get current user's issue reports
  * @route   GET /api/v1/issues/my-issues
  * @access  Private (authenticated users)

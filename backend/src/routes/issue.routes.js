@@ -4,6 +4,7 @@ import { validate } from '../middleware/validation.middleware.js';
 import { upload } from '../config/cloudinary.config.js';
 import {
     createIssue,
+    updateIssue,
     getMyIssues,
     getPublicIssues,
     getIssueById,
@@ -14,6 +15,7 @@ import {
 } from '../controllers/issue.controller.js';
 import {
     createIssueValidator,
+    updateIssueValidator,
     updateStatusValidator,
     addCommentValidator,
     getPublicIssuesValidator,
@@ -46,6 +48,14 @@ router.post(
     createIssueValidator,
     validate,
     createIssue
+);
+
+router.put(
+    '/:id',
+    issueIdValidator,
+    updateIssueValidator,
+    validate,
+    updateIssue
 );
 
 router.patch(
