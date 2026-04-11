@@ -9,6 +9,7 @@ import issueRoutes from './routes/issue.routes.js';
 import marketplaceRoutes from './routes/marketplace.routes.js';
 import surveyRoutes from './routes/survey.routes.js';
 import geocodingRoutes from './routes/geocoding.routes.js';
+import dashboardRoutes from './routes/dashboard.routes.js';
 import swaggerUi from 'swagger-ui-express';
 import YAML from 'yamljs';
 import { createRequire } from 'module';
@@ -35,6 +36,7 @@ app.use('/api/v1/issues', issueRoutes);
 app.use('/api/v1/marketplace', marketplaceRoutes);
 app.use('/api/v1/surveys', surveyRoutes);
 app.use('/api/v1/geocode', geocodingRoutes);
+app.use('/api/v1/dashboard', dashboardRoutes);
 
 app.get('/health', (req, res) => {
     res.status(200).json({ status: 'success', message: 'Server is healthy' });

@@ -4,6 +4,8 @@ import ProtectedRoute from './ProtectedRoute';
 import Login from '../pages/Login';
 import Register from '../pages/Register';
 import Home from '../pages/Home';
+import About from '../pages/About';
+import Contact from '../pages/Contact';
 import Dashboard from '../pages/Dashboard';
 import Unauthorized from '../pages/Unauthorized';
 import DashboardLayout from '../components/layout/DashboardLayout';
@@ -27,6 +29,8 @@ const AppRoutes = () => {
     <Routes>
       {/* Public Routes */}
       <Route path="/" element={<Home />} />
+      <Route path="/about" element={<About />} />
+      <Route path="/contact" element={<Contact />} />
       <Route path="/login" element={<Login />} />
       <Route path="/register" element={<Register />} />
       <Route path="/unauthorized" element={<Unauthorized />} />

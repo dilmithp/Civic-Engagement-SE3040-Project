@@ -32,8 +32,6 @@ export const getActiveSurveys = async (userRole) => {
   );
 
   const query = {
-    status: 'active',
-    deadline: { $gte: now },
     $or: [
       { targetAudience: 'all' },
       { targetAudience: userRole }
