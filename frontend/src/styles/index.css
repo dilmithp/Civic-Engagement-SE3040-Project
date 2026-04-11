@@ -4,21 +4,21 @@
 
 @layer base {
   :root {
-    --bg-color: #f8f7fc;
+    --bg-color: #f0fdfa;
     --surface-color: #ffffff;
-    --surface-hover: #f3f4f6;
-    --border-color: #e2e8f0;
-    --text-main: #1e293b;
-    --text-muted: #64748b;
+    --surface-hover: #ccfbf1;
+    --border-color: #99f6e4;
+    --text-main: #134e4a;
+    --text-muted: #14b8a6;
   }
 
   .dark {
-    --bg-color: #0f0d1a;
-    --surface-color: #1a1a2e;
-    --surface-hover: #262640;
-    --border-color: #2d2d44;
-    --text-main: #f8fafc;
-    --text-muted: #94a3b8;
+    --bg-color: #115e59;
+    --surface-color: #0f766e;
+    --surface-hover: #134e4a;
+    --border-color: #0f766e;
+    --text-main: #f0fdfa;
+    --text-muted: #5eead4;
   }
 
   body {
@@ -88,19 +88,19 @@
     @apply inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium gap-1.5 border border-transparent;
   }
 
-  .badge-purple { @apply border-purple-200 bg-purple-50 text-purple-700 dark:bg-purple-900/20 dark:border-purple-800 dark:text-purple-300; }
+  .badge-teal { @apply border-primary-200 bg-primary-50 text-primary-700 dark:bg-primary-900/20 dark:border-primary-800 dark:text-primary-300; }
   .badge-green { @apply border-emerald-200 bg-emerald-50 text-emerald-700 dark:bg-emerald-900/20 dark:border-emerald-800 dark:text-emerald-300; }
-  .badge-orange { @apply border-amber-200 bg-amber-50 text-amber-700 dark:bg-amber-900/20 dark:border-amber-800 dark:text-amber-300; }
+  .badge-amber { @apply border-amber-200 bg-amber-50 text-amber-700 dark:bg-amber-900/20 dark:border-amber-800 dark:text-amber-300; }
   .badge-red { @apply border-rose-200 bg-rose-50 text-rose-700 dark:bg-rose-900/20 dark:border-rose-800 dark:text-rose-300; }
-  .badge-blue { @apply border-blue-200 bg-blue-50 text-blue-700 dark:bg-blue-900/20 dark:border-blue-800 dark:text-blue-300; }
-  .badge-neutral { @apply border-slate-200 bg-slate-50 text-slate-700 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-300; }
+  .badge-sky { @apply border-sky-200 bg-sky-50 text-sky-700 dark:bg-sky-900/20 dark:border-sky-800 dark:text-sky-300; }
+  .badge-neutral { @apply border-primary-200 bg-primary-50 text-primary-500 dark:bg-primary-900/20 dark:border-primary-800 dark:text-primary-300; }
 
   .status-dot {
     @apply w-2 h-2 rounded-full shrink-0;
   }
   .dot-active { @apply bg-emerald-500; }
   .dot-pending { @apply bg-amber-500; }
-  .dot-closed { @apply bg-slate-500; }
+  .dot-closed { @apply bg-primary-500; }
 
   .btn {
     @apply inline-flex items-center justify-center font-medium rounded-lg transition-all focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed shadow-sm;
@@ -113,10 +113,13 @@
     @apply bg-primary-600 text-white hover:bg-primary-700 focus:ring-primary-500 border border-transparent shadow shadow-primary-500/30; 
   }
   .btn-secondary { 
-    @apply bg-surface text-textMain border border-border hover:bg-surfaceHover focus:ring-slate-200 dark:focus:ring-slate-700 shadow-none; 
+    @apply bg-primary-100 hover:bg-primary-200 text-primary-800 border-none shadow-none; 
   }
   .btn-ghost {
-    @apply bg-transparent text-textMuted hover:bg-surfaceHover hover:text-textMain shadow-none border border-transparent;
+    @apply bg-transparent text-primary-600 hover:bg-primary-50 hover:text-primary-800 shadow-none border border-transparent;
+  }
+  .btn-danger {
+    @apply bg-red-500 text-white hover:bg-red-600 focus:ring-red-500 border border-transparent shadow-none;
   }
 
   .form-group { @apply flex flex-col gap-1.5 mb-4; }
@@ -127,7 +130,7 @@
 
   /* Modals */
   .modal-backdrop {
-    @apply fixed inset-0 z-50 bg-slate-900/50 dark:bg-slate-900/80 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto;
+    @apply fixed inset-0 z-50 bg-primary-900/40 dark:bg-slate-900/80 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto;
   }
   .modal {
     @apply w-full max-w-lg bg-surface border border-border shadow-xl rounded-xl overflow-hidden;
@@ -144,11 +147,11 @@
 
   /* Structural wrappers */
   .empty-state {
-    @apply flex flex-col items-center justify-center py-12 px-4 text-center rounded-lg border-2 border-dashed border-border bg-surfaceHover;
+    @apply flex flex-col items-center justify-center py-12 px-4 text-center rounded-lg border border-dashed border-border bg-surfaceHover;
   }
 
   .content-grid { @apply grid gap-6; }
   .cols-2 { @apply grid-cols-1 lg:grid-cols-2; }
   .cols-3 { @apply grid-cols-1 md:grid-cols-2 lg:grid-cols-3; }
-  .cols-2-1 { @apply grid-cols-1 lg:grid-cols-3; } /* Custom split, children manage span */
+  .cols-2-1 { @apply grid-cols-1 lg:grid-cols-3; }
 }

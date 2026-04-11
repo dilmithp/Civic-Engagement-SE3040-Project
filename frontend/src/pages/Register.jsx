@@ -38,12 +38,12 @@ const Register = () => {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4">
-      <div className="max-w-md w-full bg-white rounded-xl shadow-lg border border-slate-100 overflow-hidden">
+    <div className="min-h-screen bg-primary-50 flex items-center justify-center p-4 font-sans">
+      <div className="max-w-md w-full bg-white rounded-xl shadow-lg border border-primary-200 overflow-hidden">
         {/* Header Section */}
-        <div className="bg-purple-700 px-8 py-10 text-center">
+        <div className="bg-primary-700 px-8 py-10 text-center">
           <h2 className="text-3xl font-bold text-white tracking-tight">Join Us</h2>
-          <p className="text-purple-100 mt-2 text-sm font-medium">Create your civic engagement account</p>
+          <p className="text-primary-100 mt-2 text-sm font-medium">Create your civic engagement account</p>
         </div>
 
         {/* Form Section */}
@@ -57,15 +57,15 @@ const Register = () => {
 
           <form onSubmit={handleSubmit} className="space-y-5">
             <div>
-              <label className="block text-sm font-semibold text-slate-700 mb-2">Full Name</label>
+              <label className="block text-sm font-semibold text-primary-800 mb-2">Full Name</label>
               <div className="relative">
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-primary-400">
                   <User size={18} />
                 </div>
                 <input
                   type="text"
                   name="name"
-                  className="w-full pl-10 pr-4 py-3 border border-slate-200 rounded-lg focus:ring-2 focus:ring-purple-600 focus:border-purple-600 transition-colors text-slate-800 placeholder-slate-400 bg-slate-50 focus:bg-white text-sm"
+                  className="w-full pl-10 pr-4 py-3 border border-primary-200 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-colors text-primary-900 placeholder-primary-400 bg-primary-50 focus:bg-white text-sm outline-none"
                   placeholder="John Doe"
                   value={formData.name}
                   onChange={handleChange}
@@ -75,15 +75,15 @@ const Register = () => {
             </div>
 
             <div>
-              <label className="block text-sm font-semibold text-slate-700 mb-2">Email Address</label>
+              <label className="block text-sm font-semibold text-primary-800 mb-2">Email Address</label>
               <div className="relative">
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-primary-400">
                   <Mail size={18} />
                 </div>
                 <input
                   type="email"
                   name="email"
-                  className="w-full pl-10 pr-4 py-3 border border-slate-200 rounded-lg focus:ring-2 focus:ring-purple-600 focus:border-purple-600 transition-colors text-slate-800 placeholder-slate-400 bg-slate-50 focus:bg-white text-sm"
+                  className="w-full pl-10 pr-4 py-3 border border-primary-200 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-colors text-primary-900 placeholder-primary-400 bg-primary-50 focus:bg-white text-sm outline-none"
                   placeholder="john@example.com"
                   value={formData.email}
                   onChange={handleChange}
@@ -93,15 +93,15 @@ const Register = () => {
             </div>
 
             <div>
-              <label className="block text-sm font-semibold text-slate-700 mb-2">Password</label>
+              <label className="block text-sm font-semibold text-primary-800 mb-2">Password</label>
               <div className="relative">
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-primary-400">
                   <Lock size={18} />
                 </div>
                 <input
                   type="password"
                   name="password"
-                  className="w-full pl-10 pr-4 py-3 border border-slate-200 rounded-lg focus:ring-2 focus:ring-purple-600 focus:border-purple-600 transition-colors text-slate-800 placeholder-slate-400 bg-slate-50 focus:bg-white text-sm"
+                  className="w-full pl-10 pr-4 py-3 border border-primary-200 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-colors text-primary-900 placeholder-primary-400 bg-primary-50 focus:bg-white text-sm outline-none"
                   placeholder="••••••••"
                   value={formData.password}
                   onChange={handleChange}
@@ -114,7 +114,7 @@ const Register = () => {
             <button
               type="submit"
               disabled={isLoading}
-              className="mt-2 w-full bg-purple-700 hover:bg-purple-800 text-white font-semibold py-3 px-4 rounded-lg transition-colors flex items-center justify-center gap-2 focus:outline-none focus:ring-2 focus:ring-purple-600 focus:ring-offset-2 disabled:opacity-70 disabled:cursor-not-allowed shadow-md shadow-purple-200"
+              className="mt-2 w-full bg-primary-600 hover:bg-primary-700 text-white font-bold py-3 px-4 rounded-lg transition-colors flex items-center justify-center gap-2 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 disabled:opacity-70 disabled:cursor-not-allowed shadow-md shadow-primary-500/20"
             >
               {isLoading ? (
                 <>
@@ -129,10 +129,10 @@ const Register = () => {
         </div>
 
         {/* Footer Section */}
-        <div className="px-8 py-5 bg-slate-50 border-t border-slate-100/60 text-center">
-          <p className="text-sm text-slate-600 font-medium">
+        <div className="px-8 py-5 bg-primary-50 border-t border-primary-100 text-center">
+          <p className="text-sm text-primary-700 font-medium">
             Already have an account?{' '}
-            <Link to="/login" className="text-purple-700 hover:text-purple-800 font-bold hover:underline">
+            <Link to="/login" className="text-primary-600 hover:text-primary-800 font-bold hover:underline transition-colors">
               Log in here
             </Link>
           </p>

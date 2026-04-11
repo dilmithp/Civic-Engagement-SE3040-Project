@@ -128,7 +128,7 @@ const IssueList = () => {
         </div>
       ) : issues.length === 0 ? (
         <div className="bg-surface border border-dashed border-border rounded-xl p-16 text-center flex flex-col items-center text-textMuted">
-          <AlertCircle size={48} className="mb-5 text-gray-300 dark:text-gray-700" />
+          <AlertCircle size={48} className="mb-5 text-primary-300 dark:text-primary-700" />
           <h3 className="text-xl font-medium text-textMain mb-2">No matching issues</h3>
           <p className="text-sm max-w-sm mb-6 opacity-80">
             {tab === 'my' ? "You haven't reported any issues matching these filters." : "There are currently no community issues matching your filters."}

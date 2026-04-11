@@ -35,7 +35,7 @@ const Sidebar = ({ isCollapsed, setIsCollapsed }) => {
 
   return (
     <aside 
-      className={`${isCollapsed ? 'w-[64px]' : 'w-[260px]'} bg-surface border-r border-border h-screen flex flex-col transition-all duration-300 relative shrink-0`}
+      className={`${isCollapsed ? 'w-[64px]' : 'w-[260px]'} bg-primary-800 border-r border-primary-700 h-screen flex flex-col transition-all duration-300 relative shrink-0 scrollbar-thumb-primary-700 scrollbar-track-transparent`}
     >
       {/* Collapse Toggle */}
       <button 
@@ -46,17 +46,18 @@ const Sidebar = ({ isCollapsed, setIsCollapsed }) => {
       </button>
 
       {/* Brand Logo */}
-      <div className="h-16 flex items-center px-4 border-b border-border shrink-0 overflow-hidden">
+      <div className="h-16 flex items-center px-4 border-b border-primary-700 shrink-0 overflow-hidden">
         <div className="flex items-center gap-3 w-full">
-          <div className="w-8 h-8 rounded-lg bg-primary-600 flex items-center justify-center shrink-0">
+          <div className="w-8 h-8 rounded-lg bg-primary-400 flex items-center justify-center shrink-0">
             <span className="text-white font-bold tracking-tight">C</span>
           </div>
-          {!isCollapsed && <span className="font-bold text-lg text-textMain tracking-tight whitespace-nowrap">CivicConnect</span>}
+          {!isCollapsed && <span className="font-bold text-lg text-white tracking-tight whitespace-nowrap">CivicConnect</span>}
         </div>
       </div>
 
       {/* Navigation */}
-      <nav className="flex-1 overflow-y-auto py-4 px-3 flex flex-col gap-1.5 custom-scrollbar">
+      <nav className="flex-1 py-4 px-3 flex flex-col gap-1.5 overflow-y-auto">
+        {!isCollapsed && <span className="text-primary-300 uppercase text-xs tracking-widest px-3 mb-2 opacity-80">General</span>}
         {allowedNavs.map((item) => (
           <NavLink
             key={item.path}
@@ -65,28 +66,28 @@ const Sidebar = ({ isCollapsed, setIsCollapsed }) => {
             className={({ isActive }) => `
               flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors overflow-hidden
               ${isActive 
-                ? 'bg-primary-50 dark:bg-primary-900/20 text-primary-700 dark:text-primary-400 font-semibold' 
-                : 'text-textMuted hover:bg-surfaceHover hover:text-textMain font-medium'}
+                ? 'bg-primary-900 text-white border-l-4 border-primary-400 font-semibold' 
+                : 'text-primary-100 hover:bg-primary-700 hover:text-white font-medium border-l-4 border-transparent'}
             `}
             title={isCollapsed ? item.label : undefined}
           >
-            <div className="shrink-0">{item.icon}</div>
+            <div className={`shrink-0 ${isCollapsed ? 'ml-0.5' : ''}`}>{item.icon}</div>
             {!isCollapsed && <span className="whitespace-nowrap text-sm">{item.label}</span>}
           </NavLink>
         ))}
       </nav>
 
       {/* User Card */}
-      <div className="border-t border-border p-3 shrink-0">
-        <div className={`flex items-center gap-3 p-2 rounded-lg ${isCollapsed ? 'justify-center' : 'justify-between'} overflow-hidden`}>
+      <div className="border-t border-primary-700 p-3 shrink-0">
+        <div className={`flex items-center gap-3 p-2 rounded-xl bg-primary-700/50 hover:bg-primary-700 transition-colors ${isCollapsed ? 'justify-center' : 'justify-between'} overflow-hidden`}>
           <div className="flex items-center gap-3 overflow-hidden">
-            <div className="w-8 h-8 rounded-full bg-primary-100 dark:bg-primary-900/30 text-primary-700 dark:text-primary-400 flex items-center justify-center shrink-0 font-bold uppercase text-xs">
+            <div className="w-8 h-8 rounded-full bg-primary-600 text-white flex items-center justify-center shrink-0 font-bold uppercase text-xs border border-primary-500">
               {user?.name?.[0] || user?.email?.[0] || 'U'}
             </div>
             {!isCollapsed && (
               <div className="flex flex-col min-w-0">
-                <span className="text-sm font-semibold text-textMain truncate">{user?.name || user?.email}</span>
-                <span className="text-xs text-textMuted capitalize truncate">{user?.role}</span>
+                <span className="text-sm font-semibold text-white truncate">{user?.name || user?.email}</span>
+                <span className="text-xs text-primary-300 capitalize truncate">{user?.role}</span>
               </div>
             )}
           </div>
@@ -94,7 +95,7 @@ const Sidebar = ({ isCollapsed, setIsCollapsed }) => {
           {!isCollapsed && (
             <button 
               onClick={logout}
-              className="p-1.5 text-textMuted hover:text-red-500 rounded transition-colors shrink-0"
+              className="p-1.5 text-primary-300 hover:text-white hover:bg-primary-600 rounded-lg transition-colors shrink-0"
               title="Logout"
             >
               <LogOut size={16} />
