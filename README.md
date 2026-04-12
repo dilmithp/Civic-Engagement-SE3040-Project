@@ -134,7 +134,7 @@ Transparent system for reporting city grievances and tracking resolution.
 
 | Method | Endpoint | Description | Auth Required |
 |:---:|:---|:---|:---:|
-| `GET` | `/api/v1/issues` | List public citizen reports | No |
+| `GET` | `/api/v1/issues` | List public citizen reports | No |s 
 | `GET` | `/api/v1/issues/my-issues` | List grievances reported by user | User |
 | `POST` | `/api/v1/issues` | Report a new issue (supports images) | User |
 | `PATCH` | `/api/v1/issues/:id/status` | Update resolution status | Official/Admin |

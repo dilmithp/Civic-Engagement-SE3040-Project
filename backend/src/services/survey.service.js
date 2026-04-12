@@ -35,7 +35,9 @@ export const createSurvey = async (data, userId, authHeader) => {
            await sendNewSurveyNotification(emailsToSend, survey.title, survey._id);
         }
       } catch (err) {
-        console.error('[SurveyService] Failed to scatter emails to target audience:', err.message);
+        if (process.env.NODE_ENV !== 'test') {
+          console.error('[SurveyService] Failed to scatter emails to target audience:', err.message);
+        }
       }
     })();
   }
