@@ -1,0 +1,45 @@
+config:
+  target: "http://localhost:5002/api/v1"
+  phases:
+    - duration: 30
+      arrivalRate: 5
+      name: Warm up phase
+    - duration: 60
+      arrivalRate: 20
+      rampTo: 40
+      name: Heavy load phase
+  defaults:
+    headers:
+      Content-Type: "application/json"
+
+scenarios:
+  - name: "Marketplace Search and Browse"
+    flow:
+      - get:
+          url: "/marketplace"
+      - get:
+          url: "/marketplace?category=Sports"
+      - get:
+          url: "/marketplace?type=sale"
+
+  - name: "Authenticated Listing Creation"
+    flow:
+      - post:
+          url: "/auth/login"
+          json:
+            email: "admin@mail.com"
+            password: "password123"
+          capture:
+            - json: "$.data.token"
+              as: "authToken"
+      
+      - post:
+          url: "/marketplace"
+          headers:
+            Authorization: "Bearer {{ authToken }}"
+          json:
+            title: "Load Test Item {{ $randomString() }}"
+            description: "Testing marketplace throughput"
+            category: "General"
+            type: "donation"
+            contactInfo: "test@example.com"

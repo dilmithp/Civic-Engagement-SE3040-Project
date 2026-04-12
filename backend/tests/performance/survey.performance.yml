@@ -23,8 +23,8 @@ config:
 
   variables:
     # Replace this with a real JWT signed with your JWT_SECRET for citizen role
-    citizenToken: "REPLACE_WITH_VALID_CITIZEN_JWT"
-    adminToken: "REPLACE_WITH_VALID_ADMIN_JWT"
+    citizenToken: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY0ZjFhMmIzYzRkNWU2ZjdhOGI5YzBkMSIsInJvbGUiOiJjaXRpemVuIiwiaWF0IjoxNzc1OTc1MjIxLCJleHAiOjE3Nzg1NjcyMjF9.ulabnv3WQY57wrMJyXgsf7ldV3u8WFTi53DkyqTwp4A"
+    adminToken: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY0ZjFhMmIzYzRkNWU2ZjdhOGI5YzBkMiIsInJvbGUiOiJhZG1pbiIsImlhdCI6MTc3NTk3NTIyMSwiZXhwIjoxNzc4NTY3MjIxfQ.jLJp_CRdVJS0YB8-JpPgRbu_eeVMNoA3t24ECDSKOck"
 
   ensure:
     - expression: "p95 < 500"     # 95th percentile response time < 500ms
