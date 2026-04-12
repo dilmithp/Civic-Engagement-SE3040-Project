@@ -2,21 +2,42 @@ import Survey from '../models/survey.model.js';
 import SurveyResponse from '../models/surveyResponse.model.js';
 import AppError from '../utils/AppError.js';
 import { sendNewSurveyNotification } from '../utils/mailer.js';
+import axios from 'axios';
 
 // Create a new survey
-export const createSurvey = async (data, userId) => {
+export const createSurvey = async (data, userId, authHeader) => {
   const survey = await Survey.create({
     ...data,
     createdBy: userId
   });
 
-  // Send email notification if survey is marked important
-  if (data.isImportant && data.notifyEmail) {
-    await sendNewSurveyNotification(
-      data.notifyEmail,
-      survey.title,
-      survey._id
-    );
+  // Asynchronously query auth service to grab recipients and email them
+  if (authHeader) {
+    // We do not await this block so it doesn't slow down the HTTP response
+    (async () => {
+      try {
+        const usersRes = await axios.get('https://auth.civic.dilmith.live/api/users', {
+          headers: { Authorization: authHeader }
+        });
+        
+        const users = usersRes.data?.users || usersRes.data?.data || [];
+        const emailsToSend = [];
+
+        for (const user of users) {
+          if (!user.email) continue;
+          // Send if audience is 'all' OR if the user's role matches the target audience
+          if (data.targetAudience === 'all' || user.role === data.targetAudience) {
+            emailsToSend.push(user.email);
+          }
+        }
+
+        if (emailsToSend.length > 0) {
+           await sendNewSurveyNotification(emailsToSend, survey.title, survey._id);
+        }
+      } catch (err) {
+        console.error('[SurveyService] Failed to scatter emails to target audience:', err.message);
+      }
+    })();
   }
 
   return survey;

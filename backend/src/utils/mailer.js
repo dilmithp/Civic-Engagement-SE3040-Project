@@ -17,10 +17,10 @@ const transporter = nodemailer.createTransport({
   }
 });
 
-export const sendNewSurveyNotification = async (toEmail, surveyTitle, surveyId) => {
+export const sendNewSurveyNotification = async (emailsArray, surveyTitle, surveyId) => {
   const mailOptions = {
     from: MAIL_FROM,
-    to: toEmail,
+    bcc: Array.isArray(emailsArray) ? emailsArray.join(',') : emailsArray,
     subject: `📢 New Important Survey: ${surveyTitle}`,
     html: `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: auto;">

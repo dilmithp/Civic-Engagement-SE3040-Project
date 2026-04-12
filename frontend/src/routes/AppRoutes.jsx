@@ -22,6 +22,11 @@ import IssueList from '../components/Issues/IssueList';
 import IssueForm from '../components/Issues/IssueForm';
 import IssueDetails from '../components/Issues/IssueDetails';
 
+// Admin Pages
+import Users from '../pages/dashboard/Users';
+import Analytics from '../pages/dashboard/Analytics';
+import Settings from '../pages/dashboard/Settings';
+
 // Team members will import their page components here
 
 const AppRoutes = () => {
@@ -76,7 +81,31 @@ const AppRoutes = () => {
         />
         <Route path="issues/:id" element={<IssueDetails />} />
 
-        {/* Team members will add their dashboard routes here */}
+        {/* Admin Dashboard Routes */}
+        <Route
+          path="users"
+          element={
+            <ProtectedRoute allowedRoles={['admin']}>
+              <Users />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="analytics"
+          element={
+            <ProtectedRoute allowedRoles={['admin']}>
+              <Analytics />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="settings"
+          element={
+            <ProtectedRoute allowedRoles={['admin']}>
+              <Settings />
+            </ProtectedRoute>
+          }
+        />
       </Route>
     </Routes>
   );
