@@ -1,6 +1,7 @@
 import MarketplaceService from '../services/marketplace.service.js';
 import { asyncHandler } from '../utils/asyncHandler.js';
 import { sendSuccess } from '../utils/response.js';
+import AppError from '../utils/AppError.js';
 
 /**
  * MarketplaceController — HTTP request/response handling only.
@@ -14,7 +15,15 @@ import { sendSuccess } from '../utils/response.js';
  */
 export const createListing = asyncHandler(async (req, res) => {
     const userId = req.user.id || req.user._id;
-    const listing = await MarketplaceService.createListing(req.body, userId);
+
+    if (!userId) {
+        throw new AppError(
+            'Authentication error: Unable to identify user. Please log in again.',
+            401
+        );
+    }
+
+    const listing = await MarketplaceService.createListing(req.body, userId, req.files || []);
 
     sendSuccess(res, 201, listing, 'Listing created successfully');
 });
@@ -28,6 +37,23 @@ export const getAllListings = asyncHandler(async (req, res) => {
     const result = await MarketplaceService.getAllListings(req.query);
 
     sendSuccess(res, 200, result, 'Listings retrieved successfully');
+});
+
+/**
+ * @desc    Get marketplace listings owned by the logged-in user
+ * @route   GET /api/v1/marketplace/mine
+ * @access  Private
+ */
+export const getMyListings = asyncHandler(async (req, res) => {
+    const userId = req.user.id || req.user._id;
+
+    if (!userId) {
+        throw new AppError('Authentication error: Unable to identify user. Please log in again.', 401);
+    }
+
+    const result = await MarketplaceService.getMyListings(userId, req.query);
+
+    sendSuccess(res, 200, result, 'Your listings retrieved successfully');
 });
 
 /**
@@ -47,10 +73,21 @@ export const getListingById = asyncHandler(async (req, res) => {
  * @access  Private (owner or admin)
  */
 export const updateListing = asyncHandler(async (req, res) => {
+    const hasBody = req.body && Object.keys(req.body).length > 0;
+    const hasFiles = Array.isArray(req.files) && req.files.length > 0;
+
+    if (!hasBody && !hasFiles) {
+        throw new AppError(
+            'No update data provided. Please include at least one field to update (title, description, category, type, price, contactInfo, images).',
+            400
+        );
+    }
+
     const listing = await MarketplaceService.updateListing(
         req.params.id,
         req.body,
-        req.user
+        req.user,
+        req.files || []
     );
 
     sendSuccess(res, 200, listing, 'Listing updated successfully');
@@ -62,6 +99,13 @@ export const updateListing = asyncHandler(async (req, res) => {
  * @access  Private (owner or admin)
  */
 export const updateListingStatus = asyncHandler(async (req, res) => {
+    if (!req.body.status) {
+        throw new AppError(
+            'Status field is required. Allowed values: available, reserved, sold, expired.',
+            400
+        );
+    }
+
     const listing = await MarketplaceService.updateListingStatus(
         req.params.id,
         req.body.status,

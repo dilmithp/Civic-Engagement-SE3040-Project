@@ -41,8 +41,7 @@ const marketplaceSchema = new mongoose.Schema(
             default: 'available'
         },
         owner: {
-            type: mongoose.Schema.Types.ObjectId,
-            ref: 'User',
+            type: String,
             required: [true, 'Owner is required']
         },
         contactInfo: {

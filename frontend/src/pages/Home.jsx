@@ -19,6 +19,7 @@ const Home = () => {
             <Link to="/" className="text-primary-600 font-semibold">Home</Link>
             <Link to="/about" className="hover:text-primary-600 transition-colors">About Us</Link>
             <Link to="/contact" className="hover:text-primary-600 transition-colors">Contact</Link>
+            <Link to="/dashboard/marketplace" className="hover:text-primary-600 transition-colors">Marketplace</Link>
           </div>
           <div className="flex gap-4">
             <Link to="/login" className="px-4 py-2 text-sm font-semibold text-primary-600 hover:text-primary-800 transition-colors">Login</Link>
