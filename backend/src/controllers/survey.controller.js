@@ -3,7 +3,7 @@ import { asyncHandler } from '../utils/asyncHandler.js';
 import { sendSuccess } from '../utils/response.js';
 
 export const createSurvey = asyncHandler(async (req, res) => {
-  const survey = await SurveyService.createSurvey(req.body, req.user.id);
+  const survey = await SurveyService.createSurvey(req.body, req.user.id, req.headers.authorization);
   sendSuccess(res, 201, survey, 'Survey created successfully');
 });
 
