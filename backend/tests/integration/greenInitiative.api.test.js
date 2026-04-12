@@ -124,7 +124,7 @@ describe('Integration Tests — Green Initiatives API', () => {
                 .post('/api/v1/green-initiatives')
                 .set('Authorization', `Bearer ${userToken}`)
                 .send(validInitiativePayload);
-            
+
             await request(app)
                 .post('/api/v1/green-initiatives')
                 .set('Authorization', `Bearer ${userToken}`)
@@ -143,7 +143,7 @@ describe('Integration Tests — Green Initiatives API', () => {
                 .post('/api/v1/green-initiatives')
                 .set('Authorization', `Bearer ${userToken}`)
                 .send(validInitiativePayload);
-            
+
             const initiativeId = createRes.body.data._id;
 
             const res = await request(app)
@@ -160,7 +160,7 @@ describe('Integration Tests — Green Initiatives API', () => {
                 .post('/api/v1/green-initiatives')
                 .set('Authorization', `Bearer ${userToken}`)
                 .send(validInitiativePayload);
-            
+
             const initiativeId = createRes.body.data._id;
             const otherUserToken = signToken({ id: "55555", role: 'user' });
 
@@ -179,7 +179,7 @@ describe('Integration Tests — Green Initiatives API', () => {
                 .post('/api/v1/green-initiatives')
                 .set('Authorization', `Bearer ${userToken}`)
                 .send(validInitiativePayload);
-            
+
             const initiativeId = createRes.body.data._id;
 
             const res = await request(app)
@@ -187,7 +187,7 @@ describe('Integration Tests — Green Initiatives API', () => {
                 .set('Authorization', `Bearer ${userToken}`);
 
             expect(res.status).toBe(200);
-            
+
             const getRes = await request(app).get(`/api/v1/green-initiatives/${initiativeId}`);
             expect(getRes.status).toBe(404);
         });
@@ -197,7 +197,7 @@ describe('Integration Tests — Green Initiatives API', () => {
                 .post('/api/v1/green-initiatives')
                 .set('Authorization', `Bearer ${userToken}`)
                 .send(validInitiativePayload);
-            
+
             const initiativeId = createRes.body.data._id;
 
             const res = await request(app)
