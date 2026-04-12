@@ -1,10 +1,12 @@
 import { Router } from 'express';
 import { protect } from '../middleware/auth.middleware.js';
 import { validate } from '../middleware/validation.middleware.js';
+import { uploadMarketplace } from '../config/cloudinary.config.js';
 import { marketplaceErrorHandler } from '../middleware/marketplace.error.middleware.js';
 import {
     createListing,
     getAllListings,
+    getMyListings,
     getListingById,
     updateListing,
     updateListingStatus,
@@ -25,13 +27,15 @@ const router = Router();
 
 // ─── Public Routes ───────────────────────────────────────────────
 router.get('/', getAllListings);
-router.get('/:id', listingIdValidator, validate, getListingById);
 
 // ─── Authenticated Routes ────────────────────────────────────────
-router.post('/', protect, createListingValidator, validate, createListing);
-router.patch('/:id', protect, listingIdValidator, updateListingValidator, validate, updateListing);
+router.get('/mine', protect, getMyListings);
+router.post('/', protect, uploadMarketplace.array('images', 5), createListingValidator, validate, createListing);
+router.patch('/:id', protect, uploadMarketplace.array('images', 5), listingIdValidator, updateListingValidator, validate, updateListing);
 router.patch('/:id/status', protect, listingIdValidator, updateListingStatusValidator, validate, updateListingStatus);
 router.delete('/:id', protect, listingIdValidator, validate, deleteListing);
+
+router.get('/:id', listingIdValidator, validate, getListingById);
 
 // ─── Marketplace-specific Error Handler ──────────────────────────
 // Catches Mongoose/DB errors from marketplace routes and converts

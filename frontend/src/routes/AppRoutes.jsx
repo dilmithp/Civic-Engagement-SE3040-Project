@@ -10,6 +10,7 @@ import Dashboard from '../pages/Dashboard';
 import Unauthorized from '../pages/Unauthorized';
 import DashboardLayout from '../components/layout/DashboardLayout';
 import Surveys from '../pages/dashboard/Surveys';
+import Marketplace from '../pages/dashboard/Marketplace';
 
 // Green Initiatives
 import GreenInitiativeList from '../components/GreenInitiatives/GreenInitiativeList';
@@ -92,6 +93,7 @@ const AppRoutes = () => {
         <Route path="issues/:id" element={<IssueDetails />} />
 
         {/* Team members will add their dashboard routes here */}
+        <Route path="marketplace" element={<Marketplace />} />
       </Route>
     </Routes>
   );
