@@ -77,26 +77,79 @@ The frontend will be instantly accessible at `http://localhost:5173`.
 A full interactive Swagger OpenAPI interface is built directly into our backend.
 Once the backend is running, navigate to: **`http://localhost:5002/api-docs`**
 
-Below is a summary of the Core Module APIs:
+---
 
-### 2.1 Surveys API (Participatory Planning)
-*Authentication Required on all mutable endpoints (Bearer Token).*
+### 2.1 Participatory Planning & Surveys
+**Member**: PATHIRANA P P D S S (IT23534254)
 
-- `GET /api/v1/surveys/active`
-  - **Description**: Returns all currently active campaigns filtered by the `targetAudience`.
-- `POST /api/v1/surveys`
-  - **Description**: Publishes a new survey and fires background email notifications to the target body.
-  - **Payload**: `{ "title": "...", "description": "...", "targetAudience": "all|citizen", "options": [ { "text": "A" }, { "text": "B" } ] }`
-- `PATCH /api/v1/surveys/:id/vote`
-  - **Description**: Casts or swaps a user's vote. Allows re-voting cleanly.
-- `GET /api/v1/surveys/:id/results`
-  - **Description**: Compiles vote distributions directly into formatting optimized for Chart.js.
+Management of community surveys and polls to gather citizen feedback.
 
-### 2.2 Dashboard Admin APIs
-- `GET /api/v1/dashboard/stats`
-  - **Description**: Calculates wide-scale application activity including KPIs and aggregated Survey Approval statistics.
-- `GET /api/v1/admin/users`
-  - **Description**: (Admin Only) Fetches all users asynchronously from the authentication microservice.
+| Method | Endpoint | Description | Auth Required |
+|:---:|:---|:---|:---:|
+| `GET` | `/api/v1/surveys/active` | Fetch all ongoing surveys | Citizen/Official/Admin |
+| `POST` | `/api/v1/surveys` | Create a new community survey | Official/Admin |
+| `GET` | `/api/v1/surveys/:id` | Get specific survey details | Yes |
+| `GET` | `/api/v1/surveys/:id/results` | Get vote distribution for Chart.js | Yes |
+| `PATCH` | `/api/v1/surveys/:id/vote` | Submit or update a vote choice | Citizen |
+| `PUT` | `/api/v1/surveys/:id` | Update survey information | Official/Admin |
+| `DELETE` | `/api/v1/surveys/:id` | Close or remove a survey | Official/Admin |
+
+---
+
+### 2.2 Green Initiatives & Events
+**Member**: WIJEKOON W M V M (IT23600416)
+
+Platform for organizing and tracking community environmental projects.
+
+| Method | Endpoint | Description | Auth Required |
+|:---:|:---|:---|:---:|
+| `GET` | `/api/v1/green-initiatives` | List all green events/projects | No |
+| `POST` | `/api/v1/green-initiatives` | Propose a new initiative | Yes |
+| `GET` | `/api/v1/green-initiatives/:id` | View initiative details and location | No |
+| `PUT` | `/api/v1/green-initiatives/:id` | Edit initiative details | Yes |
+| `DELETE` | `/api/v1/green-initiatives/:id` | Remove an initiative | Yes |
+
+---
+
+### 2.3 Circular Economy Marketplace
+**Member**: RANKETH K A D (IT23543300)
+
+Hyper-local marketplace for citizens to trade, sell, or donate items.
+
+| Method | Endpoint | Description | Auth Required |
+|:---:|:---|:---|:---:|
+| `GET` | `/api/v1/marketplace` | Browse all item listings | No |
+| `POST` | `/api/v1/marketplace` | List a new item for trade/sale | Yes |
+| `GET` | `/api/v1/marketplace/:id` | View item details and contact info | No |
+| `PATCH` | `/api/v1/marketplace/:id` | Update item description/price | Yes |
+| `PATCH` | `/api/v1/marketplace/:id/status` | Mark item as Sold/Exchanged | Yes |
+| `DELETE` | `/api/v1/marketplace/:id` | Remove a marketplace listing | Yes |
+
+---
+
+### 2.4 Issue Reporting & Resolution
+**Member**: PERERA K K L A (IT23670334)
+
+Transparent system for reporting city grievances and tracking resolution.
+
+| Method | Endpoint | Description | Auth Required |
+|:---:|:---|:---|:---:|
+| `GET` | `/api/v1/issues` | List public citizen reports | No |
+| `GET` | `/api/v1/issues/my-issues` | List grievances reported by user | User |
+| `POST` | `/api/v1/issues` | Report a new issue (supports images) | User |
+| `PATCH` | `/api/v1/issues/:id/status` | Update resolution status | Official/Admin |
+| `POST` | `/api/v1/issues/:id/comments` | Post official resolution feedback | Official/Admin |
+| `PATCH` | `/api/v1/issues/:id/withdraw` | Rescind a reported issue | Reporter |
+| `DELETE` | `/api/v1/issues/:id` | Remove an issue report | Reporter/Admin |
+
+---
+
+### 2.5 System & Analytics APIs
+General platform infrastructure and management.
+
+- `POST /api/v1/auth/login`: Identity authentication.
+- `GET /api/v1/dashboard/stats`: KPI aggregation for the Admin Analytics dashboard.
+- `GET /api/v1/admin/users`: User role management and account auditing.
 
 ---
 
