@@ -5,7 +5,7 @@
 ### Team Members
 - **IT23534254** - PATHIRANA P P D S S (Participatory Planning & Surveys)
 - **IT23600416** - WIJEKOON W M V M (Green Initiatives & Events)
-- **IT23543300** - RANKETH A K D (Circular Economy Marketplace)
+- **IT23543300** - RANKETH K A D (Circular Economy Marketplace)
 - **IT23670334** - PERERA K K L A (Issue Reporting & Resolution)
 
 ---
@@ -176,25 +176,35 @@ The entire platform is hosted natively on a single cloud VM utilizing **Nginx** 
 - **Reverse Proxy**: Nginx intercepts all traffic reaching `https://api.civic.dilmith.live` over port 443 and proxies the requests internally strictly into `localhost:8083`.
 - **Config Core**: `/etc/nginx/sites-available/civic-backend`
 
-### 3. Continuous Integration & Deployment (CI/CD Flow)
-The project utilizes automated **GitHub Actions** for instantaneous push-to-server deployments.
+### 3. 🔄 Continuous Integration & Deployment (CI/CD)
+The project implements a streamlined CI/CD pipeline using **GitHub Actions** for automated, zero-downtime deployments.
 
-\`\`\`text
-[ Push to main branch ]
-        ↓
-(GitHub Actions Triggered)
-        ↓
-(SSH into EC2 via appleboy/ssh-action)
-        ↓
-┌───────────────────────┐         ┌───────────────────────────────┐
-│       Frontend        │         │            Backend            │
-│  1. git pull          │         │  1. git pull                  │
-│  2. npm install       │         │  2. npm install               │
-│  3. npm run build     │         │  3. npm run build             │
-│  4. systemctl reload  │         │  4. pm2 restart civic-backend │
-│     nginx             │         │                               │
-└───────────────────────┘         └───────────────────────────────┘
-\`\`\`
+```text
+                     🚀 [ Push to main branch ]
+                                ↓
+                  ⚙️ (GitHub Actions Triggered)
+                                ↓
+               🔒 (SSH into EC2 via appleboy/ssh-action)
+                                ↓
+       ┌────────────────────────┴────────────────────────┐
+       ▼                                                 ▼
+🏗️ [ Frontend Deployment ]                   ⚡ [ Backend Deployment ]
+       │                                                 │
+       ├─ 📥 git pull                                    ├─ 📥 git pull
+       ├─ 📦 npm install                                 ├─ 📦 npm install
+       ├─ 🔨 npm run build                               ├─ 🔨 npm run build
+       └─ 🔄 pm2 restart civic-frontend                  └─ 🔄 pm2 restart civic-backend
+       │                                                 │
+       └────────────────────────┬────────────────────────┘
+                                ▼
+                    ✅ [ Deployment Successful ]
+```
+
+**Deployment Workflow Highlights:**
+- **Automated Triggers**: Any push to the `main` branch automatically initiates the build and deploy sequence.
+- **Parallel Deployment**: Both frontend and backend deployments are handled within the same session for consistency.
+- **Process Management**: **PM2** ensures that the build processes and server instances are restarted cleanly and remain active.
+- **Secure Access**: Deployments utilize encrypted SSH keys stored as GitHub Secrets.
 
 ### 4. Zero-Trust Security & SSL (HTTPS)
 - SSL certificates are generated natively through **Certbot** via Let's Encrypt.
