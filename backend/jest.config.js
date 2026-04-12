@@ -1,9 +1,12 @@
 export default {
   testEnvironment: 'node',
-  transform: {},
-  moduleNameMapper: {
-    '^(\\.{1,2}/.*)\\.js$': '$1'
+  transform: {
+    '^.+\.js$': 'babel-jest'
   },
   testMatch: ['**/tests/**/*.test.js'],
-  clearMocks: true
+  clearMocks: true,
+  collectCoverageFrom: [
+    'src/**/*.js',
+    '!src/config/**'
+  ]
 };

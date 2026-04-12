@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams, Link } from 'react-router-dom';
 import { ImagePlus, X, Loader, ArrowLeft, MapPin, Search } from 'lucide-react';
 import { issueService } from '../../services/issueService';
+import { useUI } from '../../context/UIContext';
 import LocationPickerMap from './LocationPickerMap';
 
 const CATEGORIES = [
@@ -18,6 +19,7 @@ const CATEGORIES = [
 const IssueForm = () => {
   const navigate = useNavigate();
   const { id } = useParams();
+  const { setPageTitle } = useUI();
   const isEditMode = Boolean(id);
 
   const [loading, setLoading] = useState(false);
@@ -35,12 +37,6 @@ const IssueForm = () => {
     lng: 0,
     images: [] // Only used in Create Mode
   });
-
-  useEffect(() => {
-    if (isEditMode) {
-      fetchIssueForEdit();
-    }
-  }, [id, isEditMode]);
 
   const fetchIssueForEdit = async () => {
     try {
@@ -70,6 +66,26 @@ const IssueForm = () => {
       setLoading(false);
     }
   };
+
+  // Set breadcrumb title based on mode
+  useEffect(() => {
+    if (isEditMode) {
+      if (formData.title) {
+        setPageTitle(`Edit: ${formData.title}`);
+      } else {
+        setPageTitle('Edit Report');
+      }
+    } else {
+      setPageTitle('Submit New Issue');
+    }
+    return () => setPageTitle('');
+  }, [isEditMode, formData.title, setPageTitle]);
+
+  useEffect(() => {
+    if (isEditMode) {
+      fetchIssueForEdit();
+    }
+  }, [id, isEditMode]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;

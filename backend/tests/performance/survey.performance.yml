@@ -1,0 +1,123 @@
+config:
+  # ─── Target server (must be running before executing this test) ────────────
+  target: "http://localhost:5002"
+  http:
+    timeout: 10  # seconds before a request is considered failed
+
+  # ─── Load Phases ──────────────────────────────────────────────────────────
+  # Phase 1: Warm-up — 5 virtual users arriving per second for 30 seconds
+  # Phase 2: Sustain and Surge — scale from 5 to 50 VUs over 60 seconds
+  phases:
+    - name: "Warm-up"
+      duration: 30
+      arrivalRate: 5
+
+    - name: "Ramp-up"
+      duration: 60
+      arrivalRate: 5
+      rampTo: 50
+
+    - name: "Peak Load"
+      duration: 60
+      arrivalRate: 50
+
+  variables:
+    # Replace this with a real JWT signed with your JWT_SECRET for citizen role
+    citizenToken: "REPLACE_WITH_VALID_CITIZEN_JWT"
+    adminToken: "REPLACE_WITH_VALID_ADMIN_JWT"
+
+  ensure:
+    - expression: "p95 < 500"     # 95th percentile response time < 500ms
+      description: "p95 latency under 500ms"
+    - expression: "vusers.failed / vusers.created < 0.01"
+      description: "Error rate under 1%"
+
+# ─── Scenarios ───────────────────────────────────────────────────────────────
+scenarios:
+  # ── Scenario 1: Browse active surveys (high frequency) ──────────────────
+  - name: "Browse Active Surveys Feed"
+    weight: 50
+    flow:
+      - get:
+          url: "/api/v1/surveys/active"
+          headers:
+            Authorization: "Bearer {{ citizenToken }}"
+          expect:
+            - statusCode: 200
+
+  # ── Scenario 2: Create Survey, Vote, and View Results (Full Flow) ───────
+  - name: "Create, Vote, and Check Results"
+    weight: 30
+    flow:
+      - post:
+          url: "/api/v1/surveys"
+          headers:
+            Authorization: "Bearer {{ adminToken }}"
+            Content-Type: "application/json"
+          json:
+            title: "Performance Test Survey {{ $randomString() }}"
+            description: "Automatically generated survey under peak load conditions."
+            options: 
+              - text: "Option A"
+              - text: "Option B"
+            deadline: "2030-12-31T23:59:59.000Z"
+            targetAudience: "all"
+          capture:
+            - json: "$.data._id"
+              as: "surveyId"
+          expect:
+            - statusCode: 201
+
+      - patch:
+          url: "/api/v1/surveys/{{ surveyId }}/vote"
+          headers:
+            Authorization: "Bearer {{ citizenToken }}"
+            Content-Type: "application/json"
+          json:
+            selectedOptionIndex: 0
+          expect:
+            - statusCode: 200
+            
+      - get:
+          url: "/api/v1/surveys/{{ surveyId }}/results"
+          headers:
+            Authorization: "Bearer {{ citizenToken }}"
+          expect:
+            - statusCode: 200
+
+  # ── Scenario 3: Heavy Votes Payload ──────────────────────────────────────
+  - name: "Heavy Concurrent Voting"
+    weight: 15
+    flow:
+      # Assume an active survey is already available or created globally
+      # Here we simulate rapid GETs on active followed by rapid voting if ID exists.
+      - get:
+          url: "/api/v1/surveys/active"
+          headers:
+            Authorization: "Bearer {{ citizenToken }}"
+          capture:
+            - json: "$.data[0]._id"
+              as: "existingSurveyId"
+              strict: false
+          expect:
+            - statusCode: 200
+            
+      - patch:
+          ifTrue: "existingSurveyId"
+          url: "/api/v1/surveys/{{ existingSurveyId }}/vote"
+          headers:
+            Authorization: "Bearer {{ citizenToken }}"
+            Content-Type: "application/json"
+          json:
+            selectedOptionIndex: 1
+
+  # ── Scenario 4: Error Handling Under Load (Admin restricted) ────────────
+  - name: "Error Handling (Unauthorized Actions)"
+    weight: 5
+    flow:
+      - delete:
+          url: "/api/v1/surveys/000000000000000000000000"
+          headers:
+            Authorization: "Bearer {{ citizenToken }}" # Citizen trying to delete
+          expect:
+            - statusCode: 403
