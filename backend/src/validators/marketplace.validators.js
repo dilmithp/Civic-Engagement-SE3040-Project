@@ -163,6 +163,15 @@ export const updateListingStatusValidator = [
         .withMessage('Status must be one of: available, reserved, sold, expired')
 ];
 
+    export const respondToRequestValidator = [
+        body('action')
+        .trim()
+        .notEmpty()
+        .withMessage('Action is required')
+        .isIn(['approve', 'reject'])
+        .withMessage('Action must be either approve or reject')
+    ];
+
 // Validate listing ID parameter
 export const listingIdValidator = [
     param('id')

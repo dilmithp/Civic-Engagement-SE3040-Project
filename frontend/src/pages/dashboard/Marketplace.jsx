@@ -10,6 +10,7 @@ const STATUSES = ['all', 'available', 'reserved', 'sold', 'expired'];
 
 const Marketplace = () => {
   const { user } = useAuth();
+  const userId = user?.id || user?._id;
 
   const [tab, setTab] = useState('all');
   const [search, setSearch] = useState('');
@@ -110,6 +111,33 @@ const Marketplace = () => {
       await loadListings();
     } catch (err) {
       setError(err?.response?.data?.message || err?.message || 'Failed to update listing status');
+    }
+  };
+
+  const requestItem = async (id) => {
+    try {
+      await marketplaceService.requestItem(id);
+      await loadListings();
+    } catch (err) {
+      setError(err?.response?.data?.message || err?.message || 'Failed to request item');
+    }
+  };
+
+  const cancelItemRequest = async (id) => {
+    try {
+      await marketplaceService.cancelItemRequest(id);
+      await loadListings();
+    } catch (err) {
+      setError(err?.response?.data?.message || err?.message || 'Failed to cancel item request');
+    }
+  };
+
+  const respondToRequest = async (id, action) => {
+    try {
+      await marketplaceService.respondToItemRequest(id, action);
+      await loadListings();
+    } catch (err) {
+      setError(err?.response?.data?.message || err?.message || 'Failed to process request action');
     }
   };
 
@@ -224,10 +252,14 @@ const Marketplace = () => {
             <MarketplaceCard
               key={listing._id}
               listing={listing}
-              canManage={tab === 'mine' || String(listing.owner) === String(user?.id)}
+              canManage={tab === 'mine' || String(listing.owner) === String(userId)}
+              currentUserId={userId}
               onEdit={openEdit}
               onDelete={deleteListing}
               onStatusChange={updateStatus}
+              onRequest={requestItem}
+              onCancelRequest={cancelItemRequest}
+              onRequestResponse={respondToRequest}
             />
           ))}
         </div>
