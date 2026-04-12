@@ -266,9 +266,9 @@ The project implements a streamlined CI/CD pipeline using **GitHub Actions** for
 
 ### 5. Authentication Specifications (Microservice Dependency)
 Authentication operations execute externally, validating with the Auth microservice module.
-- `POST` **Register**: `https://api.civic.dilmith.live/api/auth/register`
-- `POST` **Login**: `https://api.civic.dilmith.live/api/auth/login`
-- `POST` **Logout**: `https://api.civic.dilmith.live/api/auth/logout`
+- `POST` **Register**: `https://auth.civic.dilmith.live/api/auth/register`
+- `POST` **Login**: `https://auth.civic.dilmith.live/api/auth/login`
+- `POST` **Logout**: `https://auth.civic.dilmith.live/api/auth/logout`
 
 ### Directory & Log Map
 | Resource Type | Server Path Location |
