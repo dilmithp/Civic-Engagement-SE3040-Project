@@ -1,22 +1,33 @@
-import { jest } from '@jest/globals';
-import { getActiveSurveys, getSurveyById, createSurvey } from '../../../src/controllers/survey.controller.js';
-import * as SurveyService from '../../../src/services/survey.service.js';
+/**
+ * UNIT TESTS — Survey Controller
+ * Uses jest.mock() (CJS-compatible via babel-jest) to mock all dependencies.
+ */
 
-// Mock the dependencies
-jest.unstable_mockModule('../../../src/services/survey.service.js', () => ({
+// Mock dependencies BEFORE importing controller (jest.mock is hoisted by Babel)
+jest.mock('../../src/services/survey.service.js', () => ({
   getActiveSurveys: jest.fn(),
   getSurveyById: jest.fn(),
-  createSurvey: jest.fn()
+  createSurvey: jest.fn(),
+  voteOnSurvey: jest.fn(),
+  updateSurvey: jest.fn(),
+  deleteSurvey: jest.fn(),
+  getSurveyResults: jest.fn(),
 }));
 
-// Mock the response utility to prevent Express crashes
-jest.mock('../../../src/utils/response.js', () => ({
+jest.mock('../../src/utils/response.js', () => ({
   sendSuccess: jest.fn((res, statusCode, data, message) => {
     res.status(statusCode).json({ status: 'success', data, message });
-  })
+  }),
 }));
 
-describe('Survey Controller Unit Tests', () => {
+jest.mock('../../src/utils/asyncHandler.js', () => ({
+  asyncHandler: jest.fn((fn) => fn),
+}));
+
+import { getActiveSurveys, getSurveyById, createSurvey } from '../../src/controllers/survey.controller.js';
+import * as SurveyService from '../../src/services/survey.service.js';
+
+describe('Survey Controller — Unit Tests', () => {
   let mockReq;
   let mockRes;
   let mockNext;
@@ -25,48 +36,44 @@ describe('Survey Controller Unit Tests', () => {
     mockReq = {
       user: { id: 'user123', role: 'citizen' },
       params: {},
-      body: {}
+      body: {},
     };
     mockRes = {
       status: jest.fn().mockReturnThis(),
-      json: jest.fn()
+      json: jest.fn(),
     };
     mockNext = jest.fn();
     jest.clearAllMocks();
   });
 
+  // ── getActiveSurveys ─────────────────────────────────────────────────────
   describe('getActiveSurveys', () => {
-    it('should successfully fetch active surveys for the users role', async () => {
-      // Setup mock data
+    it('should successfully fetch active surveys for the user role', async () => {
       const mockSurveys = [
-        { _id: '1', title: 'Park Renovation', status: 'active', targetAudience: 'all' }
+        { _id: '1', title: 'Park Renovation', status: 'active', targetAudience: 'all', hasVoted: false },
       ];
-      
-      // We manually override the imported module since we're using ESM proxy mocking
-      jest.spyOn(SurveyService, 'getActiveSurveys').mockResolvedValue(mockSurveys);
 
-      // Execute controller
+      SurveyService.getActiveSurveys.mockResolvedValue(mockSurveys);
+
       await getActiveSurveys(mockReq, mockRes, mockNext);
 
-      // Verify Service called correctly
-      expect(SurveyService.getActiveSurveys).toHaveBeenCalledWith('citizen');
-      
-      // Verify Express Response
+      expect(SurveyService.getActiveSurveys).toHaveBeenCalledWith('citizen', 'user123');
       expect(mockRes.status).toHaveBeenCalledWith(200);
       expect(mockRes.json).toHaveBeenCalledWith({
         status: 'success',
         data: mockSurveys,
-        message: 'Active surveys fetched'
+        message: 'Active surveys fetched',
       });
     });
   });
 
+  // ── getSurveyById ────────────────────────────────────────────────────────
   describe('getSurveyById', () => {
     it('should fetch a single survey by ID', async () => {
       mockReq.params.id = 'survey_999';
       const mockSurvey = { _id: 'survey_999', title: 'Library Hours' };
-      
-      jest.spyOn(SurveyService, 'getSurveyById').mockResolvedValue(mockSurvey);
+
+      SurveyService.getSurveyById.mockResolvedValue(mockSurvey);
 
       await getSurveyById(mockReq, mockRes, mockNext);
 
@@ -75,18 +82,19 @@ describe('Survey Controller Unit Tests', () => {
       expect(mockRes.json).toHaveBeenCalledWith({
         status: 'success',
         data: mockSurvey,
-        message: 'Survey fetched'
+        message: 'Survey fetched',
       });
     });
   });
 
+  // ── createSurvey ─────────────────────────────────────────────────────────
   describe('createSurvey', () => {
     it('should allow officials to create surveys', async () => {
       mockReq.user.role = 'official';
       mockReq.body = { title: 'New Road Expansion', category: 'Infrastructure' };
       const createdObj = { _id: 'new1', ...mockReq.body };
-      
-      jest.spyOn(SurveyService, 'createSurvey').mockResolvedValue(createdObj);
+
+      SurveyService.createSurvey.mockResolvedValue(createdObj);
 
       await createSurvey(mockReq, mockRes, mockNext);
 
@@ -95,7 +103,7 @@ describe('Survey Controller Unit Tests', () => {
       expect(mockRes.json).toHaveBeenCalledWith({
         status: 'success',
         data: createdObj,
-        message: 'Survey created successfully'
+        message: 'Survey created successfully',
       });
     });
   });

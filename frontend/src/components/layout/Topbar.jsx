@@ -1,19 +1,27 @@
 import React, { useState, useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
 import { Bell, Search, Moon, Sun } from 'lucide-react';
+import { useUI } from '../../context/UIContext';
 
 const Topbar = () => {
   const [isDark, setIsDark] = useState(false);
   const location = useLocation();
+  const { pageTitle } = useUI();
 
   // Basic breadcrumb generation
   const pathnames = location.pathname.split('/').filter((x) => x);
-  let breadcrumbStr = pathnames.length > 1 
-    ? pathnames[pathnames.length - 1].replace('-', ' ') 
-    : 'Overview';
-
-  // Capitalize
-  breadcrumbStr = breadcrumbStr.charAt(0).toUpperCase() + breadcrumbStr.slice(1);
+  
+  // Use dynamic title if available, otherwise fall back to path-based name
+  let breadcrumbStr = pageTitle;
+  
+  if (!breadcrumbStr) {
+    breadcrumbStr = pathnames.length > 1 
+      ? pathnames[pathnames.length - 1].replace('-', ' ') 
+      : 'Overview';
+    
+    // Capitalize fallback
+    breadcrumbStr = breadcrumbStr.charAt(0).toUpperCase() + breadcrumbStr.slice(1);
+  }
 
   // Toggle Theme
   useEffect(() => {

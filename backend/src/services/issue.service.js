@@ -146,11 +146,18 @@ class IssueService {
      * @returns {Promise<object>} Paginated result
      */
     static async getUserIssues(userId, query = {}) {
-        const { page = 1, limit = 10, status, category } = query;
+        const { page = 1, limit = 10, status, category, search } = query;
 
         const filter = { reporter: userId };
         if (status) filter.status = status;
         if (category) filter.category = category;
+        
+        if (search) {
+            filter.$or = [
+                { title: { $regex: search, $options: 'i' } },
+                { description: { $regex: search, $options: 'i' } }
+            ];
+        }
 
         const options = {
             page: parseInt(page),
@@ -168,7 +175,7 @@ class IssueService {
      * @returns {Promise<object>} Paginated result
      */
     static async getPublicIssues(query = {}) {
-        const { page = 1, limit = 10, category, status, latitude, longitude, radius } = query;
+        const { page = 1, limit = 10, category, status, latitude, longitude, radius, search } = query;
 
         // Base filter excludes withdrawn, but can be overridden if specific status requested
         const filter = {};
@@ -180,6 +187,13 @@ class IssueService {
         }
 
         if (category) filter.category = category;
+
+        if (search) {
+            filter.$or = [
+                { title: { $regex: search, $options: 'i' } },
+                { description: { $regex: search, $options: 'i' } }
+            ];
+        }
 
         // Geo-filter: find issues near a given point within a radius (in meters)
         if (latitude && longitude) {
