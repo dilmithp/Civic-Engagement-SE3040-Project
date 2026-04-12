@@ -19,11 +19,7 @@ export const issueService = {
 
   // Create a new issue (handles FormData for image uploads)
   createIssue: async (formData) => {
-    return await api.post(ENDPOINTS.ISSUES.BASE, formData, {
-      headers: {
-        'Content-Type': 'multipart/form-data',
-      },
-    });
+    return await api.post(ENDPOINTS.ISSUES.BASE, formData);
   },
 
   // Update an existing issue text content (Edit Mode)

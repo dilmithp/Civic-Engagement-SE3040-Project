@@ -20,5 +20,9 @@ export const ENDPOINTS = {
   },
   DASHBOARD: {
     STATS: '/dashboard/stats'
+  },
+  MARKETPLACE: {
+    BASE: '/marketplace',
+    MINE: '/marketplace/mine'
   }
 };

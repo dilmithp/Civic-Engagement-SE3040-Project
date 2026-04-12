@@ -15,10 +15,19 @@ cloudinary.config({
 });
 
 // Configure Multer storage for Cloudinary
-const storage = new CloudinaryStorage({
+const issueStorage = new CloudinaryStorage({
     cloudinary,
     params: {
         folder: 'civic-engagement/issues',
+        allowed_formats: ['jpg', 'jpeg', 'png', 'webp'],
+        transformation: [{ width: 1200, height: 1200, crop: 'limit', quality: 'auto' }]
+    }
+});
+
+const marketplaceStorage = new CloudinaryStorage({
+    cloudinary,
+    params: {
+        folder: 'civic-engagement/marketplace',
         allowed_formats: ['jpg', 'jpeg', 'png', 'webp'],
         transformation: [{ width: 1200, height: 1200, crop: 'limit', quality: 'auto' }]
     }
@@ -34,13 +43,25 @@ const fileFilter = (req, file, cb) => {
 };
 
 // Export configured multer upload middleware
-export const upload = multer({
-    storage,
+export const uploadIssue = multer({
+    storage: issueStorage,
     fileFilter,
     limits: {
         fileSize: 5 * 1024 * 1024, // 5MB max per file
         files: 5                    // Max 5 files per request
     }
 });
+
+export const uploadMarketplace = multer({
+    storage: marketplaceStorage,
+    fileFilter,
+    limits: {
+        fileSize: 5 * 1024 * 1024, // 5MB max per file
+        files: 5                    // Max 5 files per request
+    }
+});
+
+// Backward-compatible alias for existing routes
+export const upload = uploadIssue;
 
 export { cloudinary };
