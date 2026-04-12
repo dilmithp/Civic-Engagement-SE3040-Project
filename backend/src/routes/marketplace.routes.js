@@ -10,12 +10,16 @@ import {
     getListingById,
     updateListing,
     updateListingStatus,
+    requestListing,
+    cancelListingRequest,
+    respondToListingRequest,
     deleteListing
 } from '../controllers/marketplace.controller.js';
 import {
     createListingValidator,
     updateListingValidator,
     updateListingStatusValidator,
+    respondToRequestValidator,
     listingIdValidator
 } from '../validators/marketplace.validators.js';
 
@@ -33,6 +37,9 @@ router.get('/mine', protect, getMyListings);
 router.post('/', protect, uploadMarketplace.array('images', 5), createListingValidator, validate, createListing);
 router.patch('/:id', protect, uploadMarketplace.array('images', 5), listingIdValidator, updateListingValidator, validate, updateListing);
 router.patch('/:id/status', protect, listingIdValidator, updateListingStatusValidator, validate, updateListingStatus);
+router.patch('/:id/request', protect, listingIdValidator, validate, requestListing);
+router.patch('/:id/request/cancel', protect, listingIdValidator, validate, cancelListingRequest);
+router.patch('/:id/request/respond', protect, listingIdValidator, respondToRequestValidator, validate, respondToListingRequest);
 router.delete('/:id', protect, listingIdValidator, validate, deleteListing);
 
 router.get('/:id', listingIdValidator, validate, getListingById);

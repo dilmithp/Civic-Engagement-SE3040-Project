@@ -5,7 +5,7 @@
 ### Team Members
 - **IT23534254** - PATHIRANA P P D S S (Participatory Planning & Surveys)
 - **IT23600416** - WIJEKOON W M V M (Green Initiatives & Events)
-- **IT23543300** - RANKETH A K D (Circular Economy Marketplace)
+- **IT23543300** - RANKETH K A D (Circular Economy Marketplace)
 - **IT23670334** - PERERA K K L A (Issue Reporting & Resolution)
 
 ---
@@ -77,26 +77,79 @@ The frontend will be instantly accessible at `http://localhost:5173`.
 A full interactive Swagger OpenAPI interface is built directly into our backend.
 Once the backend is running, navigate to: **`http://localhost:5002/api-docs`**
 
-Below is a summary of the Core Module APIs:
+---
 
-### 2.1 Surveys API (Participatory Planning)
-*Authentication Required on all mutable endpoints (Bearer Token).*
+### 2.1 Participatory Planning & Surveys
+**Member**: PATHIRANA P P D S S (IT23534254)
 
-- `GET /api/v1/surveys/active`
-  - **Description**: Returns all currently active campaigns filtered by the `targetAudience`.
-- `POST /api/v1/surveys`
-  - **Description**: Publishes a new survey and fires background email notifications to the target body.
-  - **Payload**: `{ "title": "...", "description": "...", "targetAudience": "all|citizen", "options": [ { "text": "A" }, { "text": "B" } ] }`
-- `PATCH /api/v1/surveys/:id/vote`
-  - **Description**: Casts or swaps a user's vote. Allows re-voting cleanly.
-- `GET /api/v1/surveys/:id/results`
-  - **Description**: Compiles vote distributions directly into formatting optimized for Chart.js.
+Management of community surveys and polls to gather citizen feedback.
 
-### 2.2 Dashboard Admin APIs
-- `GET /api/v1/dashboard/stats`
-  - **Description**: Calculates wide-scale application activity including KPIs and aggregated Survey Approval statistics.
-- `GET /api/v1/admin/users`
-  - **Description**: (Admin Only) Fetches all users asynchronously from the authentication microservice.
+| Method | Endpoint | Description | Auth Required |
+|:---:|:---|:---|:---:|
+| `GET` | `/api/v1/surveys/active` | Fetch all ongoing surveys | Citizen/Official/Admin |
+| `POST` | `/api/v1/surveys` | Create a new community survey | Official/Admin |
+| `GET` | `/api/v1/surveys/:id` | Get specific survey details | Yes |
+| `GET` | `/api/v1/surveys/:id/results` | Get vote distribution for Chart.js | Yes |
+| `PATCH` | `/api/v1/surveys/:id/vote` | Submit or update a vote choice | Citizen |
+| `PUT` | `/api/v1/surveys/:id` | Update survey information | Official/Admin |
+| `DELETE` | `/api/v1/surveys/:id` | Close or remove a survey | Official/Admin |
+
+---
+
+### 2.2 Green Initiatives & Events
+**Member**: WIJEKOON W M V M (IT23600416)
+
+Platform for organizing and tracking community environmental projects.
+
+| Method | Endpoint | Description | Auth Required |
+|:---:|:---|:---|:---:|
+| `GET` | `/api/v1/green-initiatives` | List all green events/projects | No |
+| `POST` | `/api/v1/green-initiatives` | Propose a new initiative | Yes |
+| `GET` | `/api/v1/green-initiatives/:id` | View initiative details and location | No |
+| `PUT` | `/api/v1/green-initiatives/:id` | Edit initiative details | Yes |
+| `DELETE` | `/api/v1/green-initiatives/:id` | Remove an initiative | Yes |
+
+---
+
+### 2.3 Circular Economy Marketplace
+**Member**: RANKETH K A D (IT23543300)
+
+Hyper-local marketplace for citizens to trade, sell, or donate items.
+
+| Method | Endpoint | Description | Auth Required |
+|:---:|:---|:---|:---:|
+| `GET` | `/api/v1/marketplace` | Browse all item listings | No |
+| `POST` | `/api/v1/marketplace` | List a new item for trade/sale | Yes |
+| `GET` | `/api/v1/marketplace/:id` | View item details and contact info | No |
+| `PATCH` | `/api/v1/marketplace/:id` | Update item description/price | Yes |
+| `PATCH` | `/api/v1/marketplace/:id/status` | Mark item as Sold/Exchanged | Yes |
+| `DELETE` | `/api/v1/marketplace/:id` | Remove a marketplace listing | Yes |
+
+---
+
+### 2.4 Issue Reporting & Resolution
+**Member**: PERERA K K L A (IT23670334)
+
+Transparent system for reporting city grievances and tracking resolution.
+
+| Method | Endpoint | Description | Auth Required |
+|:---:|:---|:---|:---:|
+| `GET` | `/api/v1/issues` | List public citizen reports | No |
+| `GET` | `/api/v1/issues/my-issues` | List grievances reported by user | User |
+| `POST` | `/api/v1/issues` | Report a new issue (supports images) | User |
+| `PATCH` | `/api/v1/issues/:id/status` | Update resolution status | Official/Admin |
+| `POST` | `/api/v1/issues/:id/comments` | Post official resolution feedback | Official/Admin |
+| `PATCH` | `/api/v1/issues/:id/withdraw` | Rescind a reported issue | Reporter |
+| `DELETE` | `/api/v1/issues/:id` | Remove an issue report | Reporter/Admin |
+
+---
+
+### 2.5 System & Analytics APIs
+General platform infrastructure and management.
+
+- `POST /api/v1/auth/login`: Identity authentication.
+- `GET /api/v1/dashboard/stats`: KPI aggregation for the Admin Analytics dashboard.
+- `GET /api/v1/admin/users`: User role management and account auditing.
 
 ---
 
@@ -176,25 +229,35 @@ The entire platform is hosted natively on a single cloud VM utilizing **Nginx** 
 - **Reverse Proxy**: Nginx intercepts all traffic reaching `https://api.civic.dilmith.live` over port 443 and proxies the requests internally strictly into `localhost:8083`.
 - **Config Core**: `/etc/nginx/sites-available/civic-backend`
 
-### 3. Continuous Integration & Deployment (CI/CD Flow)
-The project utilizes automated **GitHub Actions** for instantaneous push-to-server deployments.
+### 3. 🔄 Continuous Integration & Deployment (CI/CD)
+The project implements a streamlined CI/CD pipeline using **GitHub Actions** for automated, zero-downtime deployments.
 
-\`\`\`text
-[ Push to main branch ]
-        ↓
-(GitHub Actions Triggered)
-        ↓
-(SSH into EC2 via appleboy/ssh-action)
-        ↓
-┌───────────────────────┐         ┌───────────────────────────────┐
-│       Frontend        │         │            Backend            │
-│  1. git pull          │         │  1. git pull                  │
-│  2. npm install       │         │  2. npm install               │
-│  3. npm run build     │         │  3. npm run build             │
-│  4. systemctl reload  │         │  4. pm2 restart civic-backend │
-│     nginx             │         │                               │
-└───────────────────────┘         └───────────────────────────────┘
-\`\`\`
+```text
+                     🚀 [ Push to main branch ]
+                                ↓
+                  ⚙️ (GitHub Actions Triggered)
+                                ↓
+               🔒 (SSH into EC2 via appleboy/ssh-action)
+                                ↓
+       ┌────────────────────────┴────────────────────────┐
+       ▼                                                 ▼
+🏗️ [ Frontend Deployment ]                   ⚡ [ Backend Deployment ]
+       │                                                 │
+       ├─ 📥 git pull                                    ├─ 📥 git pull
+       ├─ 📦 npm install                                 ├─ 📦 npm install
+       ├─ 🔨 npm run build                               ├─ 🔨 npm run build
+       └─ 🔄 pm2 restart civic-frontend                  └─ 🔄 pm2 restart civic-backend
+       │                                                 │
+       └────────────────────────┬────────────────────────┘
+                                ▼
+                    ✅ [ Deployment Successful ]
+```
+
+**Deployment Workflow Highlights:**
+- **Automated Triggers**: Any push to the `main` branch automatically initiates the build and deploy sequence.
+- **Parallel Deployment**: Both frontend and backend deployments are handled within the same session for consistency.
+- **Process Management**: **PM2** ensures that the build processes and server instances are restarted cleanly and remain active.
+- **Secure Access**: Deployments utilize encrypted SSH keys stored as GitHub Secrets.
 
 ### 4. Zero-Trust Security & SSL (HTTPS)
 - SSL certificates are generated natively through **Certbot** via Let's Encrypt.
@@ -203,9 +266,9 @@ The project utilizes automated **GitHub Actions** for instantaneous push-to-serv
 
 ### 5. Authentication Specifications (Microservice Dependency)
 Authentication operations execute externally, validating with the Auth microservice module.
-- `POST` **Register**: `https://api.civic.dilmith.live/api/auth/register`
-- `POST` **Login**: `https://api.civic.dilmith.live/api/auth/login`
-- `POST` **Logout**: `https://api.civic.dilmith.live/api/auth/logout`
+- `POST` **Register**: `https://auth.civic.dilmith.live/api/auth/register`
+- `POST` **Login**: `https://auth.civic.dilmith.live/api/auth/login`
+- `POST` **Logout**: `https://auth.civic.dilmith.live/api/auth/logout`
 
 ### Directory & Log Map
 | Resource Type | Server Path Location |
