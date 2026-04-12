@@ -1,0 +1,43 @@
+config:
+  target: "http://localhost:5002/api/v1"
+  phases:
+    - duration: 30
+      arrivalRate: 5
+      name: Warm up phase
+    - duration: 60
+      arrivalRate: 15
+      rampTo: 30
+      name: Ramp up load
+  processor: "./generate-test-tokens.js"
+  defaults:
+    headers:
+      Content-Type: "application/json"
+
+scenarios:
+  - name: "Green Initiatives Browse and Create"
+    flow:
+      - function: "generateUserToken"
+      - post:
+          url: "/auth/login"
+          json:
+            email: "admin@mail.com"
+            password: "password123"
+          capture:
+            - json: "$.data.token"
+              as: "authToken"
+      
+      - get:
+          url: "/green-initiatives"
+          headers:
+            Authorization: "Bearer {{ authToken }}"
+      
+      - post:
+          url: "/green-initiatives"
+          headers:
+            Authorization: "Bearer {{ authToken }}"
+          json:
+            title: "Performance Test Project {{ $randomString() }}"
+            description: "Load testing green initiative proposed via Artillery"
+            location: "Test Site"
+            date: "2026-05-12T00:00:00.000Z"
+            status: "Upcoming"

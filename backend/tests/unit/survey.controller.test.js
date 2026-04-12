@@ -37,6 +37,7 @@ describe('Survey Controller — Unit Tests', () => {
       user: { id: 'user123', role: 'citizen' },
       params: {},
       body: {},
+      headers: { authorization: 'Bearer test-token' },
     };
     mockRes = {
       status: jest.fn().mockReturnThis(),
@@ -98,7 +99,7 @@ describe('Survey Controller — Unit Tests', () => {
 
       await createSurvey(mockReq, mockRes, mockNext);
 
-      expect(SurveyService.createSurvey).toHaveBeenCalledWith(mockReq.body, 'user123');
+      expect(SurveyService.createSurvey).toHaveBeenCalledWith(mockReq.body, 'user123', 'Bearer test-token');
       expect(mockRes.status).toHaveBeenCalledWith(201);
       expect(mockRes.json).toHaveBeenCalledWith({
         status: 'success',

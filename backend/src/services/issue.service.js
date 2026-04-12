@@ -36,7 +36,9 @@ class IssueService {
                 resolvedAddress = geo.displayName;
             } catch (err) {
                 // Geocoding is optional — don't fail issue creation if it doesn't work
-                console.warn('⚠️ Auto-geocoding failed, proceeding without address:', err.message);
+                if (process.env.NODE_ENV !== 'test') {
+                    console.warn('⚠️ Auto-geocoding failed, proceeding without address:', err.message);
+                }
             }
         }
 
@@ -107,7 +109,9 @@ class IssueService {
                         const geo = await GeocodingService.reverseGeocode(parseFloat(latitude), parseFloat(longitude));
                         newAddress = geo.displayName;
                     } catch (err) {
-                        console.warn('Auto-geocoding failed on edit:', err.message);
+                        if (process.env.NODE_ENV !== 'test') {
+                            console.warn('Auto-geocoding failed on edit:', err.message);
+                        }
                     }
                 }
             }
