@@ -22,6 +22,20 @@ const IssueForm = () => {
   const { setPageTitle } = useUI();
   const isEditMode = Boolean(id);
 
+  // Set breadcrumb title based on mode
+  useEffect(() => {
+    if (isEditMode) {
+      if (formData.title) {
+        setPageTitle(`Edit: ${formData.title}`);
+      } else {
+        setPageTitle('Edit Report');
+      }
+    } else {
+      setPageTitle('Submit New Issue');
+    }
+    return () => setPageTitle('');
+  }, [isEditMode, formData.title, setPageTitle]);
+
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [imagesPreview, setImagesPreview] = useState([]);
