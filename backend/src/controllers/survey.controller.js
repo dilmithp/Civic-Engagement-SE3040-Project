@@ -10,7 +10,8 @@ export const createSurvey = asyncHandler(async (req, res) => {
 export const getActiveSurveys = asyncHandler(async (req, res) => {
   // req.user.role is a string from the acquisitions JWT (citizen/official/admin)
   const userRole = req.user.role;
-  const surveys = await SurveyService.getActiveSurveys(userRole);
+  const userId = req.user.id;
+  const surveys = await SurveyService.getActiveSurveys(userRole, userId);
   sendSuccess(res, 200, surveys, 'Active surveys fetched');
 });
 

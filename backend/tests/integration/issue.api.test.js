@@ -55,11 +55,11 @@ jest.mock('../../src/services/geocoding.service.js', () => ({
 
 // Mock the entire Cloudinary config (upload middleware + SDK) so no real Cloudinary calls happen
 jest.mock('../../src/config/cloudinary.config.js', () => {
-    const multer = require('multer');
-    const upload = multer({ storage: multer.memoryStorage() });
     return {
         __esModule: true,
-        upload,
+        upload: {
+            array: jest.fn(() => (req, res, next) => next()),
+        },
         cloudinary: {
             config: jest.fn(),
             uploader: { destroy: jest.fn(() => Promise.resolve()) },

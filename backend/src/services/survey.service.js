@@ -23,7 +23,7 @@ export const createSurvey = async (data, userId) => {
 };
 
 // Get all active surveys (not expired, not closed)
-export const getActiveSurveys = async (userRole) => {
+export const getActiveSurveys = async (userRole, userId) => {
   const now = new Date();
 
   await Survey.updateMany(
@@ -38,7 +38,21 @@ export const getActiveSurveys = async (userRole) => {
     ]
   };
 
-  return await Survey.find(query).sort({ createdAt: -1 });
+  const surveys = await Survey.find(query).sort({ createdAt: -1 });
+
+  // Map over the surveys to inject hasVoted
+  if (!userId) return surveys;
+
+  const surveyResponses = await SurveyResponse.find({ userId });
+  const votedMap = new Map(surveyResponses.map(r => [r.surveyId.toString(), r.selectedOptionIndex]));
+
+  return surveys.map(s => {
+    const surveyObj = s.toObject();
+    const votedIndex = votedMap.get(s._id.toString());
+    surveyObj.hasVoted = votedIndex !== undefined;
+    surveyObj.userVotedOptionIndex = votedIndex ?? null;
+    return surveyObj;
+  });
 };
 
 // Get single survey by ID

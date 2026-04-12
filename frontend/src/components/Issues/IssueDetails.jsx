@@ -138,7 +138,7 @@ const IssueDetails = () => {
   
   // Robust owner check: handles both string IDs and object IDs
   const currentUserId = String(user?.id || user?._id || '');
-  const issueReporterId = String(issue?.reporter?._id || issue?.reporter || issue?.reportedBy || '');
+  const issueReporterId = String(issue?.reporter?._id || issue?.reporter || issue?.reportedBy?._id || issue?.reportedBy || '');
   const isOwner = currentUserId && issueReporterId && currentUserId === issueReporterId;
 
   return (
