@@ -134,7 +134,7 @@ Transparent system for reporting city grievances and tracking resolution.
 
 | Method | Endpoint | Description | Auth Required |
 |:---:|:---|:---|:---:|
-| `GET` | `/api/v1/issues` | List public citizen reports | No |s 
+| `GET` | `/api/v1/issues` | List public citizen reports | No |
 | `GET` | `/api/v1/issues/my-issues` | List grievances reported by user | User |
 | `POST` | `/api/v1/issues` | Report a new issue (supports images) | User |
 | `PATCH` | `/api/v1/issues/:id/status` | Update resolution status | Official/Admin |
@@ -266,9 +266,9 @@ The project implements a streamlined CI/CD pipeline using **GitHub Actions** for
 
 ### 5. Authentication Specifications (Microservice Dependency)
 Authentication operations execute externally, validating with the Auth microservice module.
-- `POST` **Register**: `https://api.civic.dilmith.live/api/auth/register`
-- `POST` **Login**: `https://api.civic.dilmith.live/api/auth/login`
-- `POST` **Logout**: `https://api.civic.dilmith.live/api/auth/logout`
+- `POST` **Register**: `https://auth.civic.dilmith.live/api/auth/register`
+- `POST` **Login**: `https://auth.civic.dilmith.live/api/auth/login`
+- `POST` **Logout**: `https://auth.civic.dilmith.live/api/auth/logout`
 
 ### Directory & Log Map
 | Resource Type | Server Path Location |
