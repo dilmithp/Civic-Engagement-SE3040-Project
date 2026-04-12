@@ -52,12 +52,6 @@ const IssueForm = () => {
     images: [] // Only used in Create Mode
   });
 
-  useEffect(() => {
-    if (isEditMode) {
-      fetchIssueForEdit();
-    }
-  }, [id, isEditMode]);
-
   const fetchIssueForEdit = async () => {
     try {
       setLoading(true);
@@ -86,6 +80,26 @@ const IssueForm = () => {
       setLoading(false);
     }
   };
+
+  // Set breadcrumb title based on mode
+  useEffect(() => {
+    if (isEditMode) {
+      if (formData.title) {
+        setPageTitle(`Edit: ${formData.title}`);
+      } else {
+        setPageTitle('Edit Report');
+      }
+    } else {
+      setPageTitle('Submit New Issue');
+    }
+    return () => setPageTitle('');
+  }, [isEditMode, formData.title, setPageTitle]);
+
+  useEffect(() => {
+    if (isEditMode) {
+      fetchIssueForEdit();
+    }
+  }, [id, isEditMode]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;

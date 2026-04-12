@@ -16,8 +16,6 @@ const GreenInitiativeList = () => {
     
     const { user } = useAuth();
 
-    useEffect(() => { fetchInitiatives(); }, []);
-
     const fetchInitiatives = async () => {
         try {
             setLoading(true);
@@ -44,6 +42,8 @@ const GreenInitiativeList = () => {
             setDeleting(false);
         }
     };
+
+    useEffect(() => { fetchInitiatives(); }, []);
 
     // Derived state for filtering (Now includes description!)
     const filteredInitiatives = initiatives.filter(initiative => {
