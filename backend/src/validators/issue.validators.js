@@ -158,7 +158,14 @@ export const getPublicIssuesValidator = [
     query('radius')
         .optional()
         .isInt({ min: 100, max: 50000 })
-        .withMessage('Radius must be between 100 and 50000 meters')
+        .withMessage('Radius must be between 100 and 50000 meters'),
+
+    query('search')
+        .optional()
+        .trim()
+        .isString()
+        .isLength({ max: 100 })
+        .withMessage('Search query cannot exceed 100 characters')
 ];
 
 // Validate issue ID param

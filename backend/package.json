@@ -5,8 +5,13 @@
   "scripts": {
     "dev": "nodemon server.js",
     "start": "node server.js",
-    "test": "NODE_OPTIONS=--experimental-vm-modules jest --detectOpenHandles",
-    "test:watch": "NODE_OPTIONS=--experimental-vm-modules jest --watch"
+    "test": "jest --detectOpenHandles --forceExit",
+    "test:unit": "jest --testPathPattern=tests/unit --detectOpenHandles --forceExit",
+    "test:integration": "jest --testPathPattern=tests/integration --detectOpenHandles --forceExit",
+    "test:coverage": "jest --coverage --detectOpenHandles --forceExit",
+    "test:watch": "jest --watch",
+    "test:all": "jest --detectOpenHandles --forceExit",
+    "test:performance": "npx artillery run tests/performance/survey.performance.yml"
   },
   "dependencies": {
     "axios": "^1.14.0",
@@ -28,7 +33,12 @@
     "yamljs": "^0.3.0"
   },
   "devDependencies": {
+    "@babel/core": "^7.29.0",
+    "@babel/preset-env": "^7.29.2",
+    "babel-jest": "^29.7.0",
+    "babel-plugin-transform-import-meta": "^2.3.3",
     "jest": "^29.7.0",
+    "mongodb-memory-server": "^9.5.0",
     "nodemon": "^3.0.1",
     "supertest": "^6.3.3"
   }

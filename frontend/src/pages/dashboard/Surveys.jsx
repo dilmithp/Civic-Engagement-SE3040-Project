@@ -19,6 +19,7 @@ const Surveys = () => {
   const [activeVoteSurvey, setActiveVoteSurvey] = useState(null);
   const [activeEditSurveyId, setActiveEditSurveyId] = useState(null);
   const [selectedIdx, setSelectedIdx] = useState(null);
+  const [isChangingVote, setIsChangingVote] = useState(false);
 
   // Form State
   const [formData, setFormData] = useState({
@@ -53,9 +54,11 @@ const Surveys = () => {
     }
   };
 
-  useEffect(() => {
-    fetchSurveys();
-  }, []);
+  const resetForm = () => {
+    setFormData({
+      title: '', description: '', category: 'Urban Planning', deadline: '', targetAudience: 'all', isImportant: false, options: [{ text: '' }, { text: '' }]
+    });
+  };
 
   const handleCreate = async (e) => {
     e.preventDefault();
@@ -82,12 +85,6 @@ const Surveys = () => {
     } catch (err) {
       showToast(err.response?.data?.message || 'Failed to update survey', 'error');
     }
-  };
-
-  const resetForm = () => {
-    setFormData({
-      title: '', description: '', category: 'Urban Planning', deadline: '', targetAudience: 'all', isImportant: false, options: [{ text: '' }, { text: '' }]
-    });
   };
 
   const openEditModal = (survey) => {
@@ -118,9 +115,10 @@ const Surveys = () => {
   const handleVote = async (surveyId, optionIndex) => {
     try {
       await api.patch(`${ENDPOINTS.SURVEYS.BASE}/${surveyId}/vote`, { selectedOptionIndex: optionIndex });
-      showToast('Vote cast successfully!');
+      showToast(isChangingVote ? 'Vote updated successfully!' : 'Vote cast successfully!');
       setActiveVoteSurvey(null);
       setSelectedIdx(null);
+      setIsChangingVote(false);
       fetchSurveys();
     } catch (err) {
       showToast(err.response?.data?.message || 'Failed to cast vote', 'error');
@@ -135,6 +133,10 @@ const Surveys = () => {
   };
   const addOption = () => setFormData({ ...formData, options: [...formData.options, { text: '' }] });
   const removeOption = (index) => setFormData({ ...formData, options: formData.options.filter((_, i) => i !== index) });
+
+  useEffect(() => {
+    fetchSurveys();
+  }, []);
 
   // Data processing
   const filteredData = surveys.filter(item => 
@@ -226,7 +228,8 @@ const Surveys = () => {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {filteredData.filter(s => activeTab === 'All' || s.status !== 'active').map((survey) => {
             const daysLeft = calculateDaysLeft(survey.deadline);
-            const isVoted = false; // Add real user specific check if backend supports it
+            const isVoted = survey.hasVoted;
+            const canChangeVote = isVoted && survey.status === 'active';
             const topOption = [...(survey.options || [])].sort((a,b) => b.voteCount - a.voteCount)[0];
 
             return (
@@ -286,16 +289,27 @@ const Surveys = () => {
                     </div>
                   </div>
                   
-                  {isVoted ? (
+                  {isVoted && !canChangeVote ? (
                     <span className="bg-primary-100 text-primary-700 text-xs font-bold px-3 py-1.5 rounded-lg flex items-center gap-1">
                       <CheckCircle2 size={14} /> Voted
                     </span>
                   ) : (
                     <button 
-                      onClick={() => setActiveVoteSurvey(survey)}
-                      className={`px-4 py-1.5 text-sm font-semibold rounded-lg transition-colors shadow-sm focus:ring-2 focus:ring-primary-500 focus:ring-offset-1 ${survey.status === 'active' ? 'bg-primary-600 text-white hover:bg-primary-700' : 'bg-primary-50 text-primary-600 hover:bg-primary-100'}`}
+                      onClick={() => {
+                        setActiveVoteSurvey(survey);
+                        // Pre-select the previously voted option
+                        setSelectedIdx(survey.userVotedOptionIndex ?? null);
+                        setIsChangingVote(isVoted);
+                      }}
+                      className={`px-4 py-1.5 text-sm font-semibold rounded-lg transition-colors shadow-sm focus:ring-2 focus:ring-primary-500 focus:ring-offset-1 ${
+                        survey.status === 'active'
+                          ? isVoted 
+                            ? 'bg-amber-50 text-amber-700 hover:bg-amber-100 border border-amber-300'
+                            : 'bg-primary-600 text-white hover:bg-primary-700'
+                          : 'bg-primary-50 text-primary-600 hover:bg-primary-100'
+                      }`}
                     >
-                      {survey.status === 'active' ? 'Vote Now' : 'View Stats'}
+                      {survey.status === 'active' ? (isVoted ? 'Change Vote' : 'Vote Now') : 'View Stats'}
                     </button>
                   )}
                 </div>
@@ -404,9 +418,12 @@ const Surveys = () => {
                   <div className="flex gap-2 mt-2">
                     <span className="text-xs font-semibold text-primary-600 bg-primary-100 px-2 py-0.5 rounded-full">{activeVoteSurvey.category}</span>
                     <span className="text-xs font-medium text-primary-500">Closes {new Date(activeVoteSurvey.deadline).toLocaleDateString()}</span>
+                    {isChangingVote && (
+                      <span className="text-xs font-semibold text-amber-600 bg-amber-50 px-2 py-0.5 rounded-full border border-amber-200">Changing Vote</span>
+                    )}
                   </div>
                 </div>
-                <button className="text-primary-400 hover:text-primary-800 transition-colors p-1.5 bg-white rounded-full shadow-sm hover:shadow" onClick={() => { setActiveVoteSurvey(null); setSelectedIdx(null); }}>
+                <button className="text-primary-400 hover:text-primary-800 transition-colors p-1.5 bg-white rounded-full shadow-sm hover:shadow" onClick={() => { setActiveVoteSurvey(null); setSelectedIdx(null); setIsChangingVote(false); }}>
                   <X size={16} />
                 </button>
               </div>
@@ -450,12 +467,15 @@ const Surveys = () => {
                   <div className="mt-6 flex flex-col gap-3">
                     <button 
                       onClick={() => handleVote(activeVoteSurvey._id, selectedIdx)}
-                      disabled={selectedIdx === null}
+                      disabled={selectedIdx === null || selectedIdx === activeVoteSurvey.userVotedOptionIndex}
                       className="w-full py-3 bg-primary-600 text-white font-bold text-sm rounded-xl hover:bg-primary-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-md shadow-primary-600/20"
                     >
-                      Sumit Vote
+                      {isChangingVote ? 'Update Vote' : 'Submit Vote'}
                     </button>
-                    <p className="text-xs text-primary-400 italic text-center">Your vote is anonymous and final. Cannot be changed after submission.</p>
+                    {isChangingVote && (
+                      <p className="text-xs text-amber-600 font-medium text-center">Select a different option to update your vote.</p>
+                    )}
+                    <p className="text-xs text-primary-400 italic text-center">You may change your vote while the survey is open.</p>
                   </div>
                 )}
               </div>

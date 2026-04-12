@@ -3,14 +3,15 @@ import { asyncHandler } from '../utils/asyncHandler.js';
 import { sendSuccess } from '../utils/response.js';
 
 export const createSurvey = asyncHandler(async (req, res) => {
-  const survey = await SurveyService.createSurvey(req.body, req.user.id);
+  const survey = await SurveyService.createSurvey(req.body, req.user.id, req.headers.authorization);
   sendSuccess(res, 201, survey, 'Survey created successfully');
 });
 
 export const getActiveSurveys = asyncHandler(async (req, res) => {
   // req.user.role is a string from the acquisitions JWT (citizen/official/admin)
   const userRole = req.user.role;
-  const surveys = await SurveyService.getActiveSurveys(userRole);
+  const userId = req.user.id;
+  const surveys = await SurveyService.getActiveSurveys(userRole, userId);
   sendSuccess(res, 200, surveys, 'Active surveys fetched');
 });
 

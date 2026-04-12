@@ -23,6 +23,11 @@ import IssueList from '../components/Issues/IssueList';
 import IssueForm from '../components/Issues/IssueForm';
 import IssueDetails from '../components/Issues/IssueDetails';
 
+// Admin Pages
+import Users from '../pages/dashboard/Users';
+import Analytics from '../pages/dashboard/Analytics';
+import Settings from '../pages/dashboard/Settings';
+
 // Team members will import their page components here
 
 const AppRoutes = () => {
@@ -36,27 +41,6 @@ const AppRoutes = () => {
       <Route path="/register" element={<Register />} />
       <Route path="/unauthorized" element={<Unauthorized />} />
 
-      {/* Green Initiatives — Public */}
-      <Route path="/green-initiatives" element={<GreenInitiativeList />} />
-      <Route path="/green-initiatives/:id" element={<InitiativeDetails />} />
-
-      {/* Green Initiatives — Protected (outside dashboard layout) */}
-      <Route
-        path="/green-initiatives/create"
-        element={
-          <ProtectedRoute>
-            <CreateInitiativeForm />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/green-initiatives/edit/:id"
-        element={
-          <ProtectedRoute>
-            <EditInitiativeForm />
-          </ProtectedRoute>
-        }
-      />
 
       {/* Protected Dashboard Routes */}
       <Route
@@ -71,6 +55,12 @@ const AppRoutes = () => {
 
         {/* Surveys — Dilmith */}
         <Route path="surveys" element={<Surveys />} />
+
+        {/* Green Initiatives */}
+        <Route path="initiatives" element={<GreenInitiativeList />} />
+       <Route path="initiatives/:id" element={<InitiativeDetails />} />
+       <Route path="initiatives/create" element={<ProtectedRoute><CreateInitiativeForm /></ProtectedRoute>} />
+       <Route path="initiatives/edit/:id" element={<ProtectedRoute><EditInitiativeForm /></ProtectedRoute>} />
 
         {/* Issues — nested under dashboard */}
         <Route path="issues" element={<IssueList />} />
@@ -94,6 +84,32 @@ const AppRoutes = () => {
 
         {/* Team members will add their dashboard routes here */}
         <Route path="marketplace" element={<Marketplace />} />
+
+        {/* Admin Dashboard Routes */}
+        <Route
+          path="users"
+          element={
+            <ProtectedRoute allowedRoles={['admin']}>
+              <Users />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="analytics"
+          element={
+            <ProtectedRoute allowedRoles={['admin']}>
+              <Analytics />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="settings"
+          element={
+            <ProtectedRoute allowedRoles={['admin']}>
+              <Settings />
+            </ProtectedRoute>
+          }
+        />
       </Route>
     </Routes>
   );
