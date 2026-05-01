@@ -10,6 +10,8 @@ export const ENDPOINTS = {
     BASE: '/surveys'
   },
   GREEN_INITIATIVES: '/green-initiatives',
+  GREEN_INITIATIVE_IMAGES: (id) => `/green-initiatives/${id}/images`,
+  GREEN_INITIATIVE_IMAGE: (id, imageId) => `/green-initiatives/${id}/images/${imageId}`,
   ISSUES: {
     BASE: '/issues',
     MY_ISSUES: '/issues/my-issues',

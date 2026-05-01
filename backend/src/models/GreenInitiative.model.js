@@ -54,7 +54,14 @@ const greenInitiativeSchema = new mongoose.Schema(
                 type: String,
                 required: false // e.g., "light rain", "few clouds"
             }
-        }
+        },
+        // Photos uploaded after the event is marked Completed
+        completionImages: [
+            {
+                url:      { type: String, required: true },
+                publicId: { type: String, required: true }
+            }
+        ]
     },
     {
         timestamps: true
