@@ -14,6 +14,11 @@ const surveyResponseSchema = new mongoose.Schema(
     selectedOptionIndex: {
       type: Number,
       required: true
+    },
+    comment: {
+      type: String,
+      trim: true,
+      maxlength: 500
     }
   },
   { timestamps: true }

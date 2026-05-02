@@ -139,9 +139,9 @@ describe('Integration Tests — Survey API', () => {
 
             expect(res.status).toBe(200);
             expect(res.body.status).toBe('success');
-            expect(Array.isArray(res.body.data)).toBe(true);
-            expect(res.body.data.length).toBeGreaterThanOrEqual(1);
-            expect(res.body.data[0].hasVoted).toBeDefined(); // Dynamic flag injected by backend
+            expect(Array.isArray(res.body.data.docs)).toBe(true);
+            expect(res.body.data.docs.length).toBeGreaterThanOrEqual(1);
+            expect(res.body.data.docs[0].hasVoted).toBeDefined(); // Dynamic flag injected by backend
         });
 
         it('should block unauthenticated access', async () => {

@@ -25,6 +25,18 @@ const greenInitiativeService = {
     // Delete an initiative (Automatically uses the token interceptor)
     deleteInitiative: (id) => {
         return api.delete(`${ENDPOINTS.GREEN_INITIATIVES}/${id}`);
+    },
+
+    // Upload completion images for a completed initiative
+    uploadCompletionImages: (id, formData) => {
+        return api.post(ENDPOINTS.GREEN_INITIATIVE_IMAGES(id), formData, {
+            headers: { 'Content-Type': 'multipart/form-data' }
+        });
+    },
+
+    // Delete a single completion image from a completed initiative
+    deleteCompletionImage: (id, imageId) => {
+        return api.delete(ENDPOINTS.GREEN_INITIATIVE_IMAGE(id, imageId));
     }
 };
 

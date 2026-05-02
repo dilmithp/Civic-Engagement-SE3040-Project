@@ -16,7 +16,7 @@ export const CLOUDINARY_API_SECRET = process.env.CLOUDINARY_API_SECRET;
 
 // Nodemailer
 export const MAIL_HOST = process.env.MAIL_HOST;
-export const MAIL_PORT = process.env.MAIL_PORT || 587;
+export const MAIL_PORT = parseInt(process.env.MAIL_PORT, 10) || 587;
 export const MAIL_USER = process.env.MAIL_USER;
 export const MAIL_PASS = process.env.MAIL_PASS;
 export const MAIL_FROM = process.env.MAIL_FROM;
