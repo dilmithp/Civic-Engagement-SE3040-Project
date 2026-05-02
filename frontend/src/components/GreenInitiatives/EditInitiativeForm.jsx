@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams, Link } from 'react-router-dom';
 import greenInitiativeService from '../../services/greenInitiative.service';
+import CompletionImageUpload from './CompletionImageUpload';
 
 const EditInitiativeForm = () => {
     const { id } = useParams();
@@ -11,6 +12,7 @@ const EditInitiativeForm = () => {
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
     const [error, setError] = useState('');
+    const [showImageUpload, setShowImageUpload] = useState(false);
 
     useEffect(() => {
         const fetchInitiative = async () => {
@@ -42,7 +44,13 @@ const EditInitiativeForm = () => {
         setError('');
         try {
             await greenInitiativeService.updateInitiative(id, formData);
-            navigate('/dashboard/initiatives');
+            if (formData.status === 'Completed') {
+                // Let the organizer upload completion photos
+                setShowImageUpload(true);
+                setSaving(false);
+            } else {
+                navigate('/dashboard/initiatives');
+            }
         } catch (err) {
             setError(err.response?.data?.message || 'Failed to update initiative.');
             setSaving(false);
@@ -60,6 +68,14 @@ const EditInitiativeForm = () => {
 
     return (
         <div className="max-w-2xl mx-auto space-y-6">
+            {/* Completion image upload modal — appears after saving as Completed */}
+            {showImageUpload && (
+                <CompletionImageUpload
+                    initiativeId={id}
+                    initiativeTitle={formData.title}
+                    onSkip={() => navigate('/dashboard/initiatives')}
+                />
+            )}
             <div className="flex items-center gap-4 border-b border-border pb-4">
                 <Link to="/dashboard/initiatives" className="text-textMuted hover:text-textMain transition-colors">← Back</Link>
                 <div>

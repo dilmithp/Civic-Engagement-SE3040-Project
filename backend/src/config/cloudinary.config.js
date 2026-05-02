@@ -33,6 +33,15 @@ const marketplaceStorage = new CloudinaryStorage({
     }
 });
 
+const initiativeStorage = new CloudinaryStorage({
+    cloudinary,
+    params: {
+        folder: 'civic-engagement/initiatives',
+        allowed_formats: ['jpg', 'jpeg', 'png', 'webp'],
+        transformation: [{ width: 1600, height: 1200, crop: 'limit', quality: 'auto' }]
+    }
+});
+
 // File filter — only allow images
 const fileFilter = (req, file, cb) => {
     if (file.mimetype.startsWith('image/')) {
@@ -54,6 +63,15 @@ export const uploadIssue = multer({
 
 export const uploadMarketplace = multer({
     storage: marketplaceStorage,
+    fileFilter,
+    limits: {
+        fileSize: 5 * 1024 * 1024, // 5MB max per file
+        files: 5                    // Max 5 files per request
+    }
+});
+
+export const uploadInitiative = multer({
+    storage: initiativeStorage,
     fileFilter,
     limits: {
         fileSize: 5 * 1024 * 1024, // 5MB max per file
