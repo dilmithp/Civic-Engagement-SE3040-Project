@@ -1,42 +1,47 @@
 import Survey from '../models/survey.model.js';
 import SurveyResponse from '../models/surveyResponse.model.js';
 import AppError from '../utils/AppError.js';
-import { sendNewSurveyNotification } from '../utils/mailer.js';
+import { sendNewSurveyNotification, sendSurveyClosingReminder } from '../utils/mailer.js';
 import axios from 'axios';
 
-// Create a new survey
 export const createSurvey = async (data, userId, authHeader) => {
   const survey = await Survey.create({
     ...data,
     createdBy: userId
   });
 
-  // Asynchronously query auth service to grab recipients and email them
   if (authHeader) {
-    // We do not await this block so it doesn't slow down the HTTP response
     (async () => {
       try {
         const usersRes = await axios.get('https://auth.civic.dilmith.live/api/users', {
           headers: { Authorization: authHeader }
         });
-        
+
         const users = usersRes.data?.users || usersRes.data?.data || [];
-        const emailsToSend = [];
+        const emails = users
+          .filter(u => u.email && (data.targetAudience === 'all' || u.role === data.targetAudience))
+          .map(u => u.email);
 
-        for (const user of users) {
-          if (!user.email) continue;
-          // Send if audience is 'all' OR if the user's role matches the target audience
-          if (data.targetAudience === 'all' || user.role === data.targetAudience) {
-            emailsToSend.push(user.email);
+        if (emails.length > 0) {
+          await sendNewSurveyNotification(emails, survey.title, survey._id, survey.isImportant);
+
+          // Schedule a closing reminder 24h before the deadline
+          const delayMs = new Date(survey.deadline).getTime() - Date.now() - 24 * 60 * 60 * 1000;
+          if (delayMs > 0) {
+            setTimeout(async () => {
+              try {
+                await sendSurveyClosingReminder(emails, survey.title, survey.deadline);
+              } catch (reminderErr) {
+                if (process.env.NODE_ENV !== 'test') {
+                  console.error('[SurveyService] Failed to send closing reminder:', reminderErr.message);
+                }
+              }
+            }, delayMs);
           }
-        }
-
-        if (emailsToSend.length > 0) {
-           await sendNewSurveyNotification(emailsToSend, survey.title, survey._id);
         }
       } catch (err) {
         if (process.env.NODE_ENV !== 'test') {
-          console.error('[SurveyService] Failed to scatter emails to target audience:', err.message);
+          console.error('[SurveyService] Failed to send survey notification emails:', err.message);
         }
       }
     })();
@@ -45,8 +50,7 @@ export const createSurvey = async (data, userId, authHeader) => {
   return survey;
 };
 
-// Get all active surveys (not expired, not closed)
-export const getActiveSurveys = async (userRole, userId) => {
+export const getActiveSurveys = async (userRole, userId, page = 1, limit = 10) => {
   const now = new Date();
 
   await Survey.updateMany(
@@ -55,40 +59,44 @@ export const getActiveSurveys = async (userRole, userId) => {
   );
 
   const query = {
+    status: { $ne: 'expired' },
     $or: [
       { targetAudience: 'all' },
       { targetAudience: userRole }
     ]
   };
 
-  const surveys = await Survey.find(query).sort({ createdAt: -1 });
-
-  // Map over the surveys to inject hasVoted
-  if (!userId) return surveys;
-
-  const surveyResponses = await SurveyResponse.find({ userId });
-  const votedMap = new Map(surveyResponses.map(r => [r.surveyId.toString(), r.selectedOptionIndex]));
-
-  return surveys.map(s => {
-    const surveyObj = s.toObject();
-    const votedIndex = votedMap.get(s._id.toString());
-    surveyObj.hasVoted = votedIndex !== undefined;
-    surveyObj.userVotedOptionIndex = votedIndex ?? null;
-    return surveyObj;
+  const result = await Survey.paginate(query, {
+    page,
+    limit,
+    sort: { createdAt: -1 }
   });
+
+  if (!userId || result.docs.length === 0) return result;
+
+  const surveyIds = result.docs.map(s => s._id);
+  const responses = await SurveyResponse.find({ userId, surveyId: { $in: surveyIds } });
+  const votedMap = new Map(responses.map(r => [r.surveyId.toString(), r.selectedOptionIndex]));
+
+  result.docs = result.docs.map(s => {
+    const obj = s.toObject();
+    const votedIndex = votedMap.get(s._id.toString());
+    obj.hasVoted = votedIndex !== undefined;
+    obj.userVotedOptionIndex = votedIndex ?? null;
+    return obj;
+  });
+
+  return result;
 };
 
-// Get single survey by ID
 export const getSurveyById = async (surveyId) => {
   const survey = await Survey.findById(surveyId);
   if (!survey) throw new AppError('Survey not found', 404);
   return survey;
 };
 
-// Vote on a survey
-export const voteOnSurvey = async (surveyId, userId, selectedOptionIndex) => {
-  const survey = await Survey.findById(surveyId);
-
+export const voteOnSurvey = async (surveyId, userId, selectedOptionIndex, comment) => {
+  const survey = await Survey.findById(surveyId).select('status deadline options');
   if (!survey) throw new AppError('Survey not found', 404);
   if (survey.status !== 'active') throw new AppError('This survey is no longer active', 400);
   if (new Date() > survey.deadline) throw new AppError('Survey deadline has passed', 400);
@@ -96,27 +104,44 @@ export const voteOnSurvey = async (surveyId, userId, selectedOptionIndex) => {
     throw new AppError('Invalid option selected', 400);
   }
 
-  const existingResponse = await SurveyResponse.findOne({ surveyId, userId });
+  const commentUpdate = comment?.trim() ? { comment: comment.trim() } : {};
 
-  if (existingResponse) {
-    // Update existing vote
-    const oldIndex = existingResponse.selectedOptionIndex;
-    survey.options[oldIndex].voteCount -= 1;
-    survey.options[selectedOptionIndex].voteCount += 1;
-    existingResponse.selectedOptionIndex = selectedOptionIndex;
-    await existingResponse.save();
-  } else {
-    // New vote
-    await SurveyResponse.create({ surveyId, userId, selectedOptionIndex });
-    survey.options[selectedOptionIndex].voteCount += 1;
-    survey.totalVotes += 1;
+  // Upsert the response; new: false returns the old doc, null if this is a new insert
+  const prevResponse = await SurveyResponse.findOneAndUpdate(
+    { surveyId, userId },
+    { $set: { selectedOptionIndex, ...commentUpdate }, $setOnInsert: { surveyId, userId } },
+    { new: false, upsert: true }
+  );
+
+  if (prevResponse) {
+    const oldIndex = prevResponse.selectedOptionIndex;
+    if (oldIndex === selectedOptionIndex) return survey;
+    // Atomically shift vote counts — no separate save needed
+    return Survey.findByIdAndUpdate(
+      surveyId,
+      {
+        $inc: {
+          [`options.${oldIndex}.voteCount`]: -1,
+          [`options.${selectedOptionIndex}.voteCount`]: 1
+        }
+      },
+      { new: true }
+    );
   }
 
-  await survey.save();
-  return survey;
+  // New vote — atomically increment count and total
+  return Survey.findByIdAndUpdate(
+    surveyId,
+    {
+      $inc: {
+        [`options.${selectedOptionIndex}.voteCount`]: 1,
+        totalVotes: 1
+      }
+    },
+    { new: true }
+  );
 };
 
-// Update survey (admin/official only)
 export const updateSurvey = async (surveyId, updateData) => {
   const survey = await Survey.findByIdAndUpdate(
     surveyId,
@@ -127,7 +152,6 @@ export const updateSurvey = async (surveyId, updateData) => {
   return survey;
 };
 
-// Delete/close survey
 export const deleteSurvey = async (surveyId) => {
   const survey = await Survey.findByIdAndUpdate(
     surveyId,
@@ -138,12 +162,19 @@ export const deleteSurvey = async (surveyId) => {
   return survey;
 };
 
-// Get survey results formatted for Chart.js
 export const getSurveyResults = async (surveyId) => {
   const survey = await Survey.findById(surveyId);
   if (!survey) throw new AppError('Survey not found', 404);
 
   const total = survey.totalVotes || 1;
+
+  const commentDocs = await SurveyResponse.find({
+    surveyId,
+    comment: { $exists: true, $ne: '' }
+  })
+    .select('selectedOptionIndex comment createdAt')
+    .sort({ createdAt: -1 })
+    .limit(50);
 
   return {
     surveyId: survey._id,
@@ -167,6 +198,60 @@ export const getSurveyResults = async (surveyId) => {
       option: opt.text,
       votes: opt.voteCount,
       percentage: ((opt.voteCount / total) * 100).toFixed(1)
+    })),
+    comments: commentDocs.map(r => ({
+      optionText: survey.options[r.selectedOptionIndex]?.text ?? '',
+      optionIndex: r.selectedOptionIndex,
+      comment: r.comment,
+      createdAt: r.createdAt
     }))
+  };
+};
+
+export const exportSurveyResults = async (surveyId) => {
+  const survey = await Survey.findById(surveyId);
+  if (!survey) throw new AppError('Survey not found', 404);
+
+  const total = survey.totalVotes || 1;
+
+  const rows = [
+    ['Survey Title', `"${survey.title.replace(/"/g, '""')}"`],
+    ['Total Votes', survey.totalVotes],
+    ['Status', survey.status],
+    ['Deadline', new Date(survey.deadline).toLocaleDateString()],
+    [],
+    ['Option', 'Votes', 'Percentage']
+  ];
+
+  survey.options.forEach(opt => {
+    rows.push([
+      `"${opt.text.replace(/"/g, '""')}"`,
+      opt.voteCount,
+      `${((opt.voteCount / total) * 100).toFixed(1)}%`
+    ]);
+  });
+
+  const commentDocs = await SurveyResponse.find({
+    surveyId,
+    comment: { $exists: true, $ne: '' }
+  })
+    .select('selectedOptionIndex comment createdAt')
+    .sort({ createdAt: -1 });
+
+  if (commentDocs.length > 0) {
+    rows.push([], ['Citizen Comments'], ['Option', 'Comment', 'Date']);
+    commentDocs.forEach(r => {
+      const optText = survey.options[r.selectedOptionIndex]?.text ?? '';
+      rows.push([
+        `"${optText.replace(/"/g, '""')}"`,
+        `"${(r.comment || '').replace(/"/g, '""')}"`,
+        new Date(r.createdAt).toLocaleDateString()
+      ]);
+    });
+  }
+
+  return {
+    csv: rows.map(r => r.join(',')).join('\n'),
+    filename: `survey-${survey.title.replace(/[^a-z0-9]/gi, '-').toLowerCase()}-results.csv`
   };
 };

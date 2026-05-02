@@ -1,18 +1,21 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Search, Trash2, X, Eye, FileText, Filter, CheckCircle2, Clock, Edit } from 'lucide-react';
+import { Plus, Search, Trash2, X, Eye, FileText, Filter, CheckCircle2, Clock, Edit, Download } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth';
 import api from '../../api/axios.config';
 import { ENDPOINTS } from '../../api/endpoints';
 
 const Surveys = () => {
   const { user } = useAuth();
-  
+
   // State
   const [surveys, setSurveys] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
+  const [page, setPage] = useState(1);
+  const [hasMore, setHasMore] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [activeTab, setActiveTab] = useState('All'); // 'All' or 'Results'
-  
+
   // Modals
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
@@ -20,6 +23,8 @@ const Surveys = () => {
   const [activeEditSurveyId, setActiveEditSurveyId] = useState(null);
   const [selectedIdx, setSelectedIdx] = useState(null);
   const [isChangingVote, setIsChangingVote] = useState(false);
+  const [voteComment, setVoteComment] = useState('');
+  const [activeVoteSurveyResults, setActiveVoteSurveyResults] = useState(null);
 
   // Form State
   const [formData, setFormData] = useState({
@@ -37,20 +42,24 @@ const Surveys = () => {
   // --- API Calls ---
   const showToast = (msg, type = 'success') => {
     console.log(`[${type}] ${msg}`);
-    if(type === 'error') alert(msg);
+    if (type === 'error') alert(msg);
   };
 
-  const fetchSurveys = async () => {
-    setIsLoading(true);
+  const fetchSurveys = async (reset = true) => {
+    const targetPage = reset ? 1 : page + 1;
+    reset ? setIsLoading(true) : setIsLoadingMore(true);
     try {
-      const res = await api.get(ENDPOINTS.SURVEYS.GET_ACTIVE);
-      const data = res.data?.data || res.data || [];
-      setSurveys(Array.isArray(data) ? data : []);
+      const res = await api.get(`${ENDPOINTS.SURVEYS.GET_ACTIVE}?page=${targetPage}&limit=10`);
+      const payload = res.data;
+      const docs = payload?.docs ?? (Array.isArray(payload) ? payload : []);
+      setSurveys(prev => reset ? docs : [...prev, ...docs]);
+      setPage(targetPage);
+      setHasMore(targetPage < (payload?.totalPages ?? 1));
     } catch (err) {
       console.error(err);
       showToast('Failed to load surveys', 'error');
     } finally {
-      setIsLoading(false);
+      reset ? setIsLoading(false) : setIsLoadingMore(false);
     }
   };
 
@@ -102,7 +111,7 @@ const Surveys = () => {
   };
 
   const handleDelete = async (id) => {
-    if(!window.confirm('Are you sure you want to delete this survey?')) return;
+    if (!window.confirm('Are you sure you want to delete this survey?')) return;
     try {
       await api.delete(`${ENDPOINTS.SURVEYS.BASE}/${id}`);
       showToast('Survey deleted');
@@ -112,16 +121,35 @@ const Surveys = () => {
     }
   };
 
-  const handleVote = async (surveyId, optionIndex) => {
+  const handleVote = async (surveyId, optionIndex, comment) => {
     try {
-      await api.patch(`${ENDPOINTS.SURVEYS.BASE}/${surveyId}/vote`, { selectedOptionIndex: optionIndex });
+      await api.patch(`${ENDPOINTS.SURVEYS.BASE}/${surveyId}/vote`, {
+        selectedOptionIndex: optionIndex,
+        ...(comment?.trim() ? { comment: comment.trim() } : {})
+      });
       showToast(isChangingVote ? 'Vote updated successfully!' : 'Vote cast successfully!');
       setActiveVoteSurvey(null);
       setSelectedIdx(null);
       setIsChangingVote(false);
+      setVoteComment('');
       fetchSurveys();
     } catch (err) {
       showToast(err.response?.data?.message || 'Failed to cast vote', 'error');
+    }
+  };
+
+  const handleExport = async (surveyId, surveyTitle) => {
+    try {
+      const csv = await api.get(`${ENDPOINTS.SURVEYS.BASE}/${surveyId}/export`);
+      const blob = new Blob([csv], { type: 'text/csv' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${surveyTitle.replace(/[^a-z0-9]/gi, '-').toLowerCase()}-results.csv`;
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      showToast('Failed to export results', 'error');
     }
   };
 
@@ -138,11 +166,21 @@ const Surveys = () => {
     fetchSurveys();
   }, []);
 
+  useEffect(() => {
+    if (!activeVoteSurvey || activeVoteSurvey.status === 'active') {
+      setActiveVoteSurveyResults(null);
+      return;
+    }
+    api.get(`${ENDPOINTS.SURVEYS.BASE}/${activeVoteSurvey._id}/results`)
+      .then(res => setActiveVoteSurveyResults(res.data))
+      .catch(() => {});
+  }, [activeVoteSurvey]);
+
   // Data processing
-  const filteredData = surveys.filter(item => 
+  const filteredData = surveys.filter(item =>
     item.title?.toLowerCase().includes(searchTerm.toLowerCase())
   );
-  
+
   const calculateDaysLeft = (deadline) => {
     const diff = new Date(deadline) - new Date();
     return Math.max(0, Math.ceil(diff / (1000 * 60 * 60 * 24)));
@@ -154,7 +192,7 @@ const Surveys = () => {
 
   return (
     <div className="max-w-6xl mx-auto pb-12 font-sans relative">
-      
+
       {/* Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
         <div>
@@ -190,13 +228,13 @@ const Surveys = () => {
       {/* TABS & FILTER BAR */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
         <div className="flex border-b border-primary-200 w-full md:w-auto">
-          <button 
+          <button
             className={`px-5 py-2 text-sm font-semibold transition-colors border-b-2 ${activeTab === 'All' ? 'text-primary-600 border-primary-600' : 'text-primary-400 border-transparent hover:text-primary-600'}`}
             onClick={() => setActiveTab('All')}
           >
             All Surveys
           </button>
-          <button 
+          <button
             className={`px-5 py-2 text-sm font-semibold transition-colors border-b-2 ${activeTab === 'Results' ? 'text-primary-600 border-primary-600' : 'text-primary-400 border-transparent hover:text-primary-600'}`}
             onClick={() => setActiveTab('Results')}
           >
@@ -207,9 +245,9 @@ const Surveys = () => {
         <div className="flex items-center gap-3 w-full md:w-auto">
           <div className="relative flex-1 md:w-64">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-primary-400" size={16} />
-            <input 
-              type="text" 
-              placeholder="Search surveys..." 
+            <input
+              type="text"
+              placeholder="Search surveys..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="w-full bg-primary-50 border border-primary-200 focus:ring-2 focus:ring-primary-500 rounded-lg pl-9 pr-3 py-2 text-sm text-primary-900 placeholder:text-primary-400 outline-none transition-all"
@@ -225,22 +263,23 @@ const Surveys = () => {
       {isLoading ? (
         <div className="p-12 text-center text-primary-400 animate-pulse font-medium">Fetching surveys...</div>
       ) : filteredData.length > 0 ? (
+        <>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {filteredData.filter(s => activeTab === 'All' || s.status !== 'active').map((survey) => {
             const daysLeft = calculateDaysLeft(survey.deadline);
             const isVoted = survey.hasVoted;
             const canChangeVote = isVoted && survey.status === 'active';
-            const topOption = [...(survey.options || [])].sort((a,b) => b.voteCount - a.voteCount)[0];
+            const topOption = [...(survey.options || [])].sort((a, b) => b.voteCount - a.voteCount)[0];
 
             return (
-              <div 
-                key={survey._id} 
+              <div
+                key={survey._id}
                 className={`flex flex-col bg-white border ${isVoted ? 'border-l-4 border-l-primary-400 border-primary-300 bg-primary-50' : 'border-primary-200'} rounded-2xl p-5 shadow-sm hover:shadow-md hover:-translate-y-1 transition-all duration-200 relative group`}
               >
                 {/* Header/Badges */}
                 <div className="flex justify-between items-start mb-3">
                   <div className="flex gap-2">
-                    {survey.status === 'active' 
+                    {survey.status === 'active'
                       ? <span className="bg-primary-100 text-primary-700 text-xs font-semibold px-2 py-0.5 rounded-full flex items-center gap-1.5"><span className="w-1.5 h-1.5 rounded-full bg-primary-500"></span>Active</span>
                       : <span className="bg-primary-50 text-primary-500 text-xs font-semibold px-2 py-0.5 rounded-full">Closed</span>
                     }
@@ -248,10 +287,13 @@ const Surveys = () => {
                   </div>
                   {canManage && (
                     <div className="flex gap-2 hidden group-hover:flex absolute right-4 top-4">
-                      <button onClick={() => openEditModal(survey)} className="text-primary-200 hover:text-primary-600 transition-colors bg-white rounded-full">
+                      <button onClick={() => openEditModal(survey)} className="text-primary-200 hover:text-primary-600 transition-colors bg-white rounded-full" title="Edit">
                         <Edit size={16} />
                       </button>
-                      <button onClick={() => handleDelete(survey._id)} className="text-primary-200 hover:text-red-500 transition-colors bg-white rounded-full">
+                      <button onClick={() => handleExport(survey._id, survey.title)} className="text-primary-200 hover:text-primary-600 transition-colors bg-white rounded-full" title="Export CSV">
+                        <Download size={16} />
+                      </button>
+                      <button onClick={() => handleDelete(survey._id)} className="text-primary-200 hover:text-red-500 transition-colors bg-white rounded-full" title="Close survey">
                         <Trash2 size={16} />
                       </button>
                     </div>
@@ -272,7 +314,7 @@ const Surveys = () => {
                       <span className="text-xs text-primary-500 font-bold">{Math.round((topOption.voteCount / survey.totalVotes) * 100) || 0}%</span>
                     </div>
                     <div className="w-full bg-primary-100 h-1.5 rounded-full overflow-hidden">
-                      <div className="bg-gradient-to-r from-primary-700 to-primary-500 h-2" style={{width: `${(topOption.voteCount / survey.totalVotes) * 100 || 0}%`}}></div>
+                      <div className="bg-gradient-to-r from-primary-700 to-primary-500 h-2" style={{ width: `${(topOption.voteCount / survey.totalVotes) * 100 || 0}%` }}></div>
                     </div>
                   </div>
                 )}
@@ -284,30 +326,29 @@ const Surveys = () => {
                       <FileText size={14} className="text-primary-400" /> {survey.totalVotes || 0}
                     </div>
                     <div className={`flex items-center gap-1 ${daysLeft <= 3 && survey.status === 'active' ? 'text-red-600 bg-red-50 px-1.5 py-0.5 rounded' : ''}`} title="Deadline">
-                      <Clock size={14} className={daysLeft <= 3 && survey.status === 'active' ? 'text-red-500' : 'text-primary-400'} /> 
+                      <Clock size={14} className={daysLeft <= 3 && survey.status === 'active' ? 'text-red-500' : 'text-primary-400'} />
                       {survey.status === 'active' ? (daysLeft > 0 ? `${daysLeft}d left` : 'Ends today') : 'Ended'}
                     </div>
                   </div>
-                  
+
                   {isVoted && !canChangeVote ? (
                     <span className="bg-primary-100 text-primary-700 text-xs font-bold px-3 py-1.5 rounded-lg flex items-center gap-1">
                       <CheckCircle2 size={14} /> Voted
                     </span>
                   ) : (
-                    <button 
+                    <button
                       onClick={() => {
                         setActiveVoteSurvey(survey);
                         // Pre-select the previously voted option
                         setSelectedIdx(survey.userVotedOptionIndex ?? null);
                         setIsChangingVote(isVoted);
                       }}
-                      className={`px-4 py-1.5 text-sm font-semibold rounded-lg transition-colors shadow-sm focus:ring-2 focus:ring-primary-500 focus:ring-offset-1 ${
-                        survey.status === 'active'
-                          ? isVoted 
+                      className={`px-4 py-1.5 text-sm font-semibold rounded-lg transition-colors shadow-sm focus:ring-2 focus:ring-primary-500 focus:ring-offset-1 ${survey.status === 'active'
+                          ? isVoted
                             ? 'bg-amber-50 text-amber-700 hover:bg-amber-100 border border-amber-300'
                             : 'bg-primary-600 text-white hover:bg-primary-700'
                           : 'bg-primary-50 text-primary-600 hover:bg-primary-100'
-                      }`}
+                        }`}
                     >
                       {survey.status === 'active' ? (isVoted ? 'Change Vote' : 'Vote Now') : 'View Stats'}
                     </button>
@@ -317,15 +358,27 @@ const Surveys = () => {
             );
           })}
         </div>
-      ) : (
-         <div className="flex flex-col items-center justify-center py-16 px-4 text-center rounded-2xl border-2 border-dashed border-primary-200 bg-primary-50/50">
-            <div className="w-14 h-14 bg-primary-100 text-primary-400 rounded-2xl flex items-center justify-center mb-4 shadow-sm relative">
-              <span className="absolute -top-1 -right-1 w-3 h-3 bg-amber-400 rounded-full animate-ping opacity-50"></span>
-              <FileText size={24} />
-            </div>
-            <h3 className="text-lg font-bold text-primary-900">No surveys found</h3>
-            <p className="text-sm text-primary-500 mt-1 max-w-sm">There are no participatory surveys matching your current configuration.</p>
+        {hasMore && (
+          <div className="flex justify-center mt-8">
+            <button
+              onClick={() => fetchSurveys(false)}
+              disabled={isLoadingMore}
+              className="px-6 py-2.5 text-sm font-semibold text-primary-700 bg-white border border-primary-300 rounded-xl hover:bg-primary-50 transition-colors disabled:opacity-50"
+            >
+              {isLoadingMore ? 'Loading...' : 'Load More'}
+            </button>
           </div>
+        )}
+        </>
+      ) : (
+        <div className="flex flex-col items-center justify-center py-16 px-4 text-center rounded-2xl border-2 border-dashed border-primary-200 bg-primary-50/50">
+          <div className="w-14 h-14 bg-primary-100 text-primary-400 rounded-2xl flex items-center justify-center mb-4 shadow-sm relative">
+            <span className="absolute -top-1 -right-1 w-3 h-3 bg-amber-400 rounded-full animate-ping opacity-50"></span>
+            <FileText size={24} />
+          </div>
+          <h3 className="text-lg font-bold text-primary-900">No surveys found</h3>
+          <p className="text-sm text-primary-500 mt-1 max-w-sm">There are no participatory surveys matching your current configuration.</p>
+        </div>
       )}
 
       {/* --- CREATE / EDIT SURVEY MODAL --- */}
@@ -338,39 +391,39 @@ const Surveys = () => {
                 <X size={18} />
               </button>
             </div>
-            
+
             <form onSubmit={isEditModalOpen ? handleUpdate : handleCreate} className="flex-1 overflow-y-auto p-6 space-y-5 custom-scrollbar">
               <div className="space-y-4">
                 <div>
                   <label className="block text-sm font-semibold text-primary-800 mb-1.5">Survey Title</label>
-                  <input type="text" value={formData.title} onChange={e => setFormData({...formData, title: e.target.value})} className="w-full bg-white border border-primary-200 focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 rounded-xl px-4 py-2.5 text-sm text-primary-900 placeholder:text-primary-300 outline-none transition-all shadow-sm" placeholder="e.g. Main Street Renovation" required />
+                  <input type="text" value={formData.title} onChange={e => setFormData({ ...formData, title: e.target.value })} className="w-full bg-white border border-primary-200 focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 rounded-xl px-4 py-2.5 text-sm text-primary-900 placeholder:text-primary-300 outline-none transition-all shadow-sm" placeholder="e.g. Main Street Renovation" required />
                 </div>
-                
+
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <label className="block text-sm font-semibold text-primary-800 mb-1.5">Audience</label>
-                    <select value={formData.targetAudience} onChange={e => setFormData({...formData, targetAudience: e.target.value})} className="w-full bg-white border border-primary-200 focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 rounded-xl px-4 py-2.5 text-sm text-primary-900 outline-none shadow-sm">
+                    <select value={formData.targetAudience} onChange={e => setFormData({ ...formData, targetAudience: e.target.value })} className="w-full bg-white border border-primary-200 focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 rounded-xl px-4 py-2.5 text-sm text-primary-900 outline-none shadow-sm">
                       <option value="all">Everyone</option>
                       <option value="citizen">Citizens Only</option>
                     </select>
                   </div>
                   <div>
                     <label className="block text-sm font-semibold text-primary-800 mb-1.5">Closing Date</label>
-                    <input type="date" value={formData.deadline} onChange={e => setFormData({...formData, deadline: e.target.value})} className="w-full bg-white border border-primary-200 focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 rounded-xl px-4 py-2.5 text-sm text-primary-900 outline-none shadow-sm" required />
+                    <input type="date" value={formData.deadline} onChange={e => setFormData({ ...formData, deadline: e.target.value })} className="w-full bg-white border border-primary-200 focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 rounded-xl px-4 py-2.5 text-sm text-primary-900 outline-none shadow-sm" required />
                   </div>
                 </div>
 
                 <div>
                   <label className="block text-sm font-semibold text-primary-800 mb-1.5">Description</label>
-                  <textarea rows="2" value={formData.description} onChange={e => setFormData({...formData, description: e.target.value})} className="w-full bg-white border border-primary-200 focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 rounded-xl px-4 py-2.5 text-sm text-primary-900 placeholder:text-primary-300 outline-none shadow-sm resize-none" placeholder="Context explaining what citizens are voting on..." required></textarea>
+                  <textarea rows="2" value={formData.description} onChange={e => setFormData({ ...formData, description: e.target.value })} className="w-full bg-white border border-primary-200 focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 rounded-xl px-4 py-2.5 text-sm text-primary-900 placeholder:text-primary-300 outline-none shadow-sm resize-none" placeholder="Context explaining what citizens are voting on..." required></textarea>
                 </div>
-                
+
                 <div className="bg-primary-50 border border-primary-200 rounded-xl p-3 flex items-center justify-between">
                   <div>
                     <span className="text-sm font-semibold text-primary-800 block">Mark as Important</span>
                     <span className="text-xs text-primary-400">Highlights this survey on the dashboard.</span>
                   </div>
-                  <input type="checkbox" checked={formData.isImportant} onChange={e => setFormData({...formData, isImportant: e.target.checked})} className="w-5 h-5 accent-primary-600 rounded cursor-pointer" />
+                  <input type="checkbox" checked={formData.isImportant} onChange={e => setFormData({ ...formData, isImportant: e.target.checked })} className="w-5 h-5 accent-primary-600 rounded cursor-pointer" />
                 </div>
 
                 <div>
@@ -383,7 +436,7 @@ const Surveys = () => {
                   <div className="space-y-2">
                     {formData.options.map((opt, i) => (
                       <div key={i} className="flex gap-2 relative group">
-                        <input type="text" value={opt.text} onChange={e => updateOption(i, e.target.value)} placeholder={`Option ${i+1}`} className="flex-1 bg-white border border-primary-200 focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 rounded-xl px-4 py-2 text-sm text-primary-900 outline-none shadow-sm" required />
+                        <input type="text" value={opt.text} onChange={e => updateOption(i, e.target.value)} placeholder={`Option ${i + 1}`} className="flex-1 bg-white border border-primary-200 focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 rounded-xl px-4 py-2 text-sm text-primary-900 outline-none shadow-sm" required />
                         {formData.options.length > 2 && (
                           <button type="button" onClick={() => removeOption(i)} className="absolute right-2 top-1/2 -translate-y-1/2 text-primary-200 hover:text-red-500 bg-white px-1 opacity-0 group-hover:opacity-100 transition-opacity">
                             <X size={16} />
@@ -394,7 +447,7 @@ const Surveys = () => {
                   </div>
                 </div>
               </div>
-              
+
               <div className="mt-8 pt-4 border-t border-primary-100 flex justify-end gap-3 sticky bottom-0 bg-white">
                 <button type="button" className="px-5 py-2.5 text-sm font-semibold text-primary-800 bg-primary-50 hover:bg-primary-100 rounded-xl transition-colors" onClick={() => { setIsCreateModalOpen(false); setIsEditModalOpen(false); setActiveEditSurveyId(null); }}>Cancel</button>
                 <button type="submit" className="px-5 py-2.5 text-sm font-bold text-white bg-primary-600 hover:bg-primary-700 shadow-md shadow-primary-600/20 rounded-xl transition-colors">{isEditModalOpen ? 'Save Changes' : 'Publish Survey'}</button>
@@ -411,7 +464,7 @@ const Surveys = () => {
         return (
           <div className="fixed inset-0 z-50 bg-primary-900/40 backdrop-blur-sm flex items-center justify-center p-4">
             <div className="w-full max-w-[440px] bg-white border border-primary-200 shadow-2xl rounded-2xl overflow-hidden flex flex-col">
-              
+
               <div className="p-5 border-b border-primary-100 flex justify-between items-start bg-primary-50">
                 <div>
                   <h3 className="font-bold text-lg text-primary-900 pr-4 leading-tight">{activeVoteSurvey.title}</h3>
@@ -423,14 +476,14 @@ const Surveys = () => {
                     )}
                   </div>
                 </div>
-                <button className="text-primary-400 hover:text-primary-800 transition-colors p-1.5 bg-white rounded-full shadow-sm hover:shadow" onClick={() => { setActiveVoteSurvey(null); setSelectedIdx(null); setIsChangingVote(false); }}>
+                <button className="text-primary-400 hover:text-primary-800 transition-colors p-1.5 bg-white rounded-full shadow-sm hover:shadow" onClick={() => { setActiveVoteSurvey(null); setSelectedIdx(null); setIsChangingVote(false); setVoteComment(''); }}>
                   <X size={16} />
                 </button>
               </div>
 
               <div className="p-6">
                 <p className="text-sm text-primary-700 mb-5 leading-relaxed">{activeVoteSurvey.description}</p>
-                
+
                 <div className="space-y-3">
                   {activeVoteSurvey.options?.map((opt, i) => {
                     const pct = activeVoteSurvey.totalVotes > 0 ? Math.round((opt.voteCount / activeVoteSurvey.totalVotes) * 100) : 0;
@@ -449,8 +502,8 @@ const Surveys = () => {
                     }
 
                     return (
-                      <button 
-                        key={i} 
+                      <button
+                        key={i}
                         onClick={() => setSelectedIdx(i)}
                         className={`w-full text-left flex items-center justify-between p-4 rounded-xl border-2 transition-all ${isSelected ? 'border-primary-600 bg-primary-50' : 'border-primary-100 bg-white hover:border-primary-300 hover:bg-primary-50'}`}
                       >
@@ -464,18 +517,49 @@ const Surveys = () => {
                 </div>
 
                 {!isClosed && (
-                  <div className="mt-6 flex flex-col gap-3">
-                    <button 
-                      onClick={() => handleVote(activeVoteSurvey._id, selectedIdx)}
-                      disabled={selectedIdx === null || selectedIdx === activeVoteSurvey.userVotedOptionIndex}
-                      className="w-full py-3 bg-primary-600 text-white font-bold text-sm rounded-xl hover:bg-primary-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-md shadow-primary-600/20"
-                    >
-                      {isChangingVote ? 'Update Vote' : 'Submit Vote'}
-                    </button>
-                    {isChangingVote && (
-                      <p className="text-xs text-amber-600 font-medium text-center">Select a different option to update your vote.</p>
-                    )}
-                    <p className="text-xs text-primary-400 italic text-center">You may change your vote while the survey is open.</p>
+                  <>
+                    <div className="mt-4">
+                      <label className="block text-xs font-semibold text-primary-700 mb-1.5">
+                        Share your reasoning <span className="text-primary-400 font-normal">(optional)</span>
+                      </label>
+                      <textarea
+                        rows="2"
+                        value={voteComment}
+                        onChange={e => setVoteComment(e.target.value)}
+                        maxLength={500}
+                        placeholder="Why are you voting for this option?"
+                        className="w-full bg-primary-50 border border-primary-200 focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 rounded-xl px-4 py-2.5 text-sm text-primary-900 placeholder:text-primary-300 outline-none resize-none"
+                      />
+                    </div>
+                    <div className="mt-4 flex flex-col gap-3">
+                      <button
+                        onClick={() => handleVote(activeVoteSurvey._id, selectedIdx, voteComment)}
+                        disabled={selectedIdx === null || selectedIdx === activeVoteSurvey.userVotedOptionIndex}
+                        className="w-full py-3 bg-primary-600 text-white font-bold text-sm rounded-xl hover:bg-primary-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-md shadow-primary-600/20"
+                      >
+                        {isChangingVote ? 'Update Vote' : 'Submit Vote'}
+                      </button>
+                      {isChangingVote && (
+                        <p className="text-xs text-amber-600 font-medium text-center">Select a different option to update your vote.</p>
+                      )}
+                      <p className="text-xs text-primary-400 italic text-center">You may change your vote while the survey is open.</p>
+                    </div>
+                  </>
+                )}
+
+                {isClosed && activeVoteSurveyResults?.comments?.length > 0 && (
+                  <div className="mt-5 pt-4 border-t border-primary-100">
+                    <h4 className="text-xs font-bold text-primary-700 uppercase tracking-wider mb-3">
+                      Citizen Voices ({activeVoteSurveyResults.comments.length})
+                    </h4>
+                    <div className="space-y-2 max-h-40 overflow-y-auto">
+                      {activeVoteSurveyResults.comments.slice(0, 10).map((c, i) => (
+                        <div key={i} className="bg-primary-50 rounded-lg px-3 py-2 border border-primary-100">
+                          <span className="text-xs font-semibold text-primary-600 block mb-0.5">{c.optionText}</span>
+                          <p className="text-xs text-primary-700 leading-relaxed">{c.comment}</p>
+                        </div>
+                      ))}
+                    </div>
                   </div>
                 )}
               </div>

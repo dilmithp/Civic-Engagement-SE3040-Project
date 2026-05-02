@@ -10,22 +10,26 @@ import {
 const transporter = nodemailer.createTransport({
   host: MAIL_HOST,
   port: MAIL_PORT,
-  secure: false,
+  secure: MAIL_PORT === 465,
   auth: {
     user: MAIL_USER,
     pass: MAIL_PASS
   }
 });
 
-export const sendNewSurveyNotification = async (emailsArray, surveyTitle, surveyId) => {
+export const sendNewSurveyNotification = async (emailsArray, surveyTitle, surveyId, isImportant = false) => {
+  const subject = isImportant
+    ? `📢 Important Survey: ${surveyTitle}`
+    : `📋 New Survey Available: ${surveyTitle}`;
+
   const mailOptions = {
     from: MAIL_FROM,
     bcc: Array.isArray(emailsArray) ? emailsArray.join(',') : emailsArray,
-    subject: `📢 New Important Survey: ${surveyTitle}`,
+    subject,
     html: `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: auto;">
-        <h2 style="color: #2e7d32;">New Survey Available</h2>
-        <p>A new important survey has been published in your area:</p>
+        <h2 style="color: #2e7d32;">${isImportant ? 'Important Survey' : 'New Survey'} Available</h2>
+        <p>A new survey has been published${isImportant ? ' — your participation is especially encouraged' : ''}:</p>
         <h3>${surveyTitle}</h3>
         <p>Your opinion matters! Please log in to participate.</p>
         <a href="${process.env.FRONTEND_URL}/surveys/${surveyId}"
@@ -34,7 +38,7 @@ export const sendNewSurveyNotification = async (emailsArray, surveyTitle, survey
           Vote Now
         </a>
         <p style="margin-top: 20px; color: #888; font-size: 12px;">
-          Civic Engagement & Sustainability Platform
+          Civic Engagement &amp; Sustainability Platform
         </p>
       </div>
     `
@@ -43,10 +47,10 @@ export const sendNewSurveyNotification = async (emailsArray, surveyTitle, survey
   await transporter.sendMail(mailOptions);
 };
 
-export const sendSurveyClosingReminder = async (toEmail, surveyTitle, deadline) => {
+export const sendSurveyClosingReminder = async (emailsArray, surveyTitle, deadline) => {
   const mailOptions = {
     from: MAIL_FROM,
-    to: toEmail,
+    bcc: Array.isArray(emailsArray) ? emailsArray.join(',') : emailsArray,
     subject: `⏰ Survey Closing Soon: ${surveyTitle}`,
     html: `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: auto;">
@@ -55,7 +59,7 @@ export const sendSurveyClosingReminder = async (toEmail, surveyTitle, deadline) 
         <h3>${surveyTitle}</h3>
         <p>Don't miss your chance to vote!</p>
         <p style="margin-top: 20px; color: #888; font-size: 12px;">
-          Civic Engagement & Sustainability Platform
+          Civic Engagement &amp; Sustainability Platform
         </p>
       </div>
     `

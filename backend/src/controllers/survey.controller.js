@@ -8,10 +8,11 @@ export const createSurvey = asyncHandler(async (req, res) => {
 });
 
 export const getActiveSurveys = asyncHandler(async (req, res) => {
-  // req.user.role is a string from the acquisitions JWT (citizen/official/admin)
   const userRole = req.user.role;
   const userId = req.user.id;
-  const surveys = await SurveyService.getActiveSurveys(userRole, userId);
+  const page = parseInt(req.query.page, 10) || 1;
+  const limit = parseInt(req.query.limit, 10) || 10;
+  const surveys = await SurveyService.getActiveSurveys(userRole, userId, page, limit);
   sendSuccess(res, 200, surveys, 'Active surveys fetched');
 });
 
@@ -21,13 +22,21 @@ export const getSurveyById = asyncHandler(async (req, res) => {
 });
 
 export const voteOnSurvey = asyncHandler(async (req, res) => {
-  const { selectedOptionIndex } = req.body;
+  const { selectedOptionIndex, comment } = req.body;
   const survey = await SurveyService.voteOnSurvey(
     req.params.id,
     req.user.id,
-    selectedOptionIndex
+    selectedOptionIndex,
+    comment
   );
   sendSuccess(res, 200, survey, 'Vote recorded successfully');
+});
+
+export const exportSurveyResults = asyncHandler(async (req, res) => {
+  const { csv, filename } = await SurveyService.exportSurveyResults(req.params.id);
+  res.setHeader('Content-Type', 'text/csv');
+  res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+  res.send(csv);
 });
 
 export const updateSurvey = asyncHandler(async (req, res) => {

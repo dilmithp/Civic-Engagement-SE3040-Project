@@ -1,4 +1,5 @@
 import mongoose from 'mongoose';
+import mongoosePaginate from 'mongoose-paginate-v2';
 
 const optionSchema = new mongoose.Schema({
   text: {
@@ -62,15 +63,10 @@ const surveySchema = new mongoose.Schema(
   { timestamps: true }
 );
 
-// Auto-expire surveys past deadline
-surveySchema.pre('find', function () {
-  this.where({
-    $or: [
-      { status: { $ne: 'expired' } },
-      { deadline: { $gt: new Date() } }
-    ]
-  });
-});
+// Compound index to speed up the targetAudience + status filter with sort in getActiveSurveys
+surveySchema.index({ targetAudience: 1, status: 1, createdAt: -1 });
+
+surveySchema.plugin(mongoosePaginate);
 
 const Survey = mongoose.model('Survey', surveySchema);
 export default Survey;

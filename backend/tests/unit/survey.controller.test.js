@@ -37,6 +37,7 @@ describe('Survey Controller — Unit Tests', () => {
       user: { id: 'user123', role: 'citizen' },
       params: {},
       body: {},
+      query: {},
       headers: { authorization: 'Bearer test-token' },
     };
     mockRes = {
@@ -58,7 +59,7 @@ describe('Survey Controller — Unit Tests', () => {
 
       await getActiveSurveys(mockReq, mockRes, mockNext);
 
-      expect(SurveyService.getActiveSurveys).toHaveBeenCalledWith('citizen', 'user123');
+      expect(SurveyService.getActiveSurveys).toHaveBeenCalledWith('citizen', 'user123', 1, 10);
       expect(mockRes.status).toHaveBeenCalledWith(200);
       expect(mockRes.json).toHaveBeenCalledWith({
         status: 'success',

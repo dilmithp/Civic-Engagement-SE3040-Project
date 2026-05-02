@@ -13,7 +13,8 @@ import {
   voteOnSurvey,
   updateSurvey,
   deleteSurvey,
-  getSurveyResults
+  getSurveyResults,
+  exportSurveyResults
 } from '../controllers/survey.controller.js';
 
 const router = Router();
@@ -68,6 +69,14 @@ router.put(
   protect,
   authorize(ROLES.ADMIN, ROLES.OFFICIAL),
   updateSurvey
+);
+
+// Admin/Official: Export results as CSV
+router.get(
+  '/:id/export',
+  protect,
+  authorize(ROLES.ADMIN, ROLES.OFFICIAL),
+  exportSurveyResults
 );
 
 // Admin/Official: Close/delete survey

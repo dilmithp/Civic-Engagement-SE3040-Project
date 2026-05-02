@@ -37,5 +37,10 @@ export const createSurveyValidator = [
 export const voteValidator = [
   body('selectedOptionIndex')
     .notEmpty().withMessage('Option index is required')
-    .isInt({ min: 0 }).withMessage('Option index must be a non-negative integer')
+    .isInt({ min: 0 }).withMessage('Option index must be a non-negative integer'),
+
+  body('comment')
+    .optional()
+    .isString().withMessage('Comment must be a string')
+    .isLength({ max: 500 }).withMessage('Comment cannot exceed 500 characters')
 ];
