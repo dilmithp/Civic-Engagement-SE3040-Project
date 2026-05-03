@@ -24,3 +24,7 @@ export const FRONTEND_URL = process.env.FRONTEND_URL;
 
 // OpenAI
 export const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
+
+// Auth service (for fetching users to notify)
+export const AUTH_SERVICE_URL = process.env.AUTH_SERVICE_URL || 'https://auth.civic.dilmith.live';
+export const AUTH_SERVICE_TOKEN = process.env.AUTH_SERVICE_TOKEN;
