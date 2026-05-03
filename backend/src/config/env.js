@@ -21,3 +21,6 @@ export const MAIL_USER = process.env.MAIL_USER;
 export const MAIL_PASS = process.env.MAIL_PASS;
 export const MAIL_FROM = process.env.MAIL_FROM;
 export const FRONTEND_URL = process.env.FRONTEND_URL;
+
+// OpenAI
+export const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
