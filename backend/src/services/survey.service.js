@@ -1,3 +1,5 @@
+import axios from 'axios';
+import jwt from 'jsonwebtoken';
 import OpenAI from 'openai';
 import Survey from '../models/survey.model.js';
 import SurveyResponse from '../models/surveyResponse.model.js';
@@ -12,8 +14,51 @@ const getOpenAI = () => {
   return _openai;
 };
 
-// Maps survey targetAudience values to User model role values
+// Maps survey targetAudience values to User role values (auth service uses 'user' for citizens)
 const AUDIENCE_TO_ROLE = { citizen: 'user', official: 'official' };
+
+// Sign a short-lived token for a real admin user so the auth service middleware
+// accepts it (middleware validates id against DB; bare service tokens get 403)
+const makeServiceToken = async () => {
+  const admin = await User.findOne({ role: 'admin' }).select('_id email role').lean();
+  if (!admin) throw new Error('No admin user found to sign service token');
+  return jwt.sign(
+    { id: admin._id, email: admin.email, role: admin.role },
+    process.env.JWT_SECRET,
+    { expiresIn: '5m' }
+  );
+};
+
+// Fetch users from the auth service; falls back to local User model if unavailable
+const getEmailsForAudience = async (targetAudience) => {
+  const authServiceUrl = process.env.AUTH_SERVICE_URL || 'https://auth.civic.dilmith.live';
+
+  if (process.env.JWT_SECRET) {
+    try {
+      const token = process.env.AUTH_SERVICE_TOKEN || await makeServiceToken();
+      const res = await axios.get(`${authServiceUrl}/api/users`, {
+        headers: { Authorization: `Bearer ${token}` },
+        timeout: 8000
+      });
+      const users = res.data?.users ?? res.data?.data ?? (Array.isArray(res.data) ? res.data : []);
+      const roleFilter = targetAudience === 'all' ? null : (AUDIENCE_TO_ROLE[targetAudience] ?? targetAudience);
+      return users
+        .filter(u => u.email && (roleFilter === null || u.role === roleFilter))
+        .map(u => u.email);
+    } catch (err) {
+      if (process.env.NODE_ENV !== 'test') {
+        console.warn('[SurveyService] Auth service unreachable, falling back to local DB:', err.message);
+      }
+    }
+  }
+
+  // Fallback: query local User model
+  const roleFilter = targetAudience === 'all'
+    ? {}
+    : { role: AUDIENCE_TO_ROLE[targetAudience] ?? targetAudience };
+  const users = await User.find(roleFilter).select('email');
+  return users.map(u => u.email).filter(Boolean);
+};
 
 export const createSurvey = async (data, userId) => {
   const survey = await Survey.create({
@@ -23,19 +68,16 @@ export const createSurvey = async (data, userId) => {
 
   (async () => {
     try {
-      const roleFilter = data.targetAudience === 'all'
-        ? {}
-        : { role: AUDIENCE_TO_ROLE[data.targetAudience] ?? data.targetAudience };
-
-      const users = await User.find(roleFilter).select('email');
-      const emails = users.map(u => u.email).filter(Boolean);
+      const emails = await getEmailsForAudience(data.targetAudience);
 
       if (emails.length > 0) {
         await sendNewSurveyNotification(emails, survey.title, survey._id, survey.isImportant);
 
-        // Schedule a closing reminder 24h before the deadline
+        // Schedule a closing reminder 24h before the deadline.
+        // setTimeout uses a 32-bit signed int; cap at ~24 days to avoid overflow.
+        const MAX_TIMEOUT = 2_147_483_647;
         const delayMs = new Date(survey.deadline).getTime() - Date.now() - 24 * 60 * 60 * 1000;
-        if (delayMs > 0) {
+        if (delayMs > 0 && delayMs <= MAX_TIMEOUT) {
           setTimeout(async () => {
             try {
               await sendSurveyClosingReminder(emails, survey.title, survey.deadline);

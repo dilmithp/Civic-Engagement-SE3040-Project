@@ -22,9 +22,11 @@ export const sendNewSurveyNotification = async (emailsArray, surveyTitle, survey
     ? `📢 Important Survey: ${surveyTitle}`
     : `📋 New Survey Available: ${surveyTitle}`;
 
+  const recipients = Array.isArray(emailsArray) ? emailsArray : [emailsArray];
   const mailOptions = {
     from: MAIL_FROM,
-    bcc: Array.isArray(emailsArray) ? emailsArray.join(',') : emailsArray,
+    to: MAIL_USER,
+    bcc: recipients.join(','),
     subject,
     html: `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: auto;">
@@ -48,9 +50,11 @@ export const sendNewSurveyNotification = async (emailsArray, surveyTitle, survey
 };
 
 export const sendSurveyClosingReminder = async (emailsArray, surveyTitle, deadline) => {
+  const recipients = Array.isArray(emailsArray) ? emailsArray : [emailsArray];
   const mailOptions = {
     from: MAIL_FROM,
-    bcc: Array.isArray(emailsArray) ? emailsArray.join(',') : emailsArray,
+    to: MAIL_USER,
+    bcc: recipients.join(','),
     subject: `⏰ Survey Closing Soon: ${surveyTitle}`,
     html: `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: auto;">
