@@ -1,51 +1,58 @@
+import OpenAI from 'openai';
 import Survey from '../models/survey.model.js';
 import SurveyResponse from '../models/surveyResponse.model.js';
+import User from '../models/User.model.js';
 import AppError from '../utils/AppError.js';
 import { sendNewSurveyNotification, sendSurveyClosingReminder } from '../utils/mailer.js';
-import axios from 'axios';
 
-export const createSurvey = async (data, userId, authHeader) => {
+// Lazy — only instantiated when getSurveySummary is called, so missing key doesn't crash module load
+let _openai = null;
+const getOpenAI = () => {
+  if (!_openai) _openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+  return _openai;
+};
+
+// Maps survey targetAudience values to User model role values
+const AUDIENCE_TO_ROLE = { citizen: 'user', official: 'official' };
+
+export const createSurvey = async (data, userId) => {
   const survey = await Survey.create({
     ...data,
     createdBy: userId
   });
 
-  if (authHeader) {
-    (async () => {
-      try {
-        const usersRes = await axios.get('https://auth.civic.dilmith.live/api/users', {
-          headers: { Authorization: authHeader }
-        });
+  (async () => {
+    try {
+      const roleFilter = data.targetAudience === 'all'
+        ? {}
+        : { role: AUDIENCE_TO_ROLE[data.targetAudience] ?? data.targetAudience };
 
-        const users = usersRes.data?.users || usersRes.data?.data || [];
-        const emails = users
-          .filter(u => u.email && (data.targetAudience === 'all' || u.role === data.targetAudience))
-          .map(u => u.email);
+      const users = await User.find(roleFilter).select('email');
+      const emails = users.map(u => u.email).filter(Boolean);
 
-        if (emails.length > 0) {
-          await sendNewSurveyNotification(emails, survey.title, survey._id, survey.isImportant);
+      if (emails.length > 0) {
+        await sendNewSurveyNotification(emails, survey.title, survey._id, survey.isImportant);
 
-          // Schedule a closing reminder 24h before the deadline
-          const delayMs = new Date(survey.deadline).getTime() - Date.now() - 24 * 60 * 60 * 1000;
-          if (delayMs > 0) {
-            setTimeout(async () => {
-              try {
-                await sendSurveyClosingReminder(emails, survey.title, survey.deadline);
-              } catch (reminderErr) {
-                if (process.env.NODE_ENV !== 'test') {
-                  console.error('[SurveyService] Failed to send closing reminder:', reminderErr.message);
-                }
+        // Schedule a closing reminder 24h before the deadline
+        const delayMs = new Date(survey.deadline).getTime() - Date.now() - 24 * 60 * 60 * 1000;
+        if (delayMs > 0) {
+          setTimeout(async () => {
+            try {
+              await sendSurveyClosingReminder(emails, survey.title, survey.deadline);
+            } catch (reminderErr) {
+              if (process.env.NODE_ENV !== 'test') {
+                console.error('[SurveyService] Failed to send closing reminder:', reminderErr.message);
               }
-            }, delayMs);
-          }
-        }
-      } catch (err) {
-        if (process.env.NODE_ENV !== 'test') {
-          console.error('[SurveyService] Failed to send survey notification emails:', err.message);
+            }
+          }, delayMs);
         }
       }
-    })();
-  }
+    } catch (err) {
+      if (process.env.NODE_ENV !== 'test') {
+        console.error('[SurveyService] Failed to send survey notification emails:', err.message);
+      }
+    }
+  })();
 
   return survey;
 };
@@ -253,5 +260,65 @@ export const exportSurveyResults = async (surveyId) => {
   return {
     csv: rows.map(r => r.join(',')).join('\n'),
     filename: `survey-${survey.title.replace(/[^a-z0-9]/gi, '-').toLowerCase()}-results.csv`
+  };
+};
+
+export const getSurveySummary = async (surveyId) => {
+  const survey = await Survey.findById(surveyId);
+  if (!survey) throw new AppError('Survey not found', 404);
+  if (!survey.totalVotes) throw new AppError('Survey has no votes yet — nothing to summarise', 400);
+
+  if (!process.env.OPENAI_API_KEY) throw new AppError('AI summary is not configured on this server', 503);
+
+  const total = survey.totalVotes;
+
+  const votesSection = survey.options
+    .map(opt => `- "${opt.text}": ${opt.voteCount} votes (${((opt.voteCount / total) * 100).toFixed(1)}%)`)
+    .join('\n');
+
+  const commentDocs = await SurveyResponse.find({
+    surveyId,
+    comment: { $exists: true, $ne: '' }
+  })
+    .select('selectedOptionIndex comment')
+    .sort({ createdAt: -1 })
+    .limit(20);
+
+  const commentsSection = commentDocs.length > 0
+    ? '\nCitizen comments:\n' + commentDocs
+        .map(r => `- [${survey.options[r.selectedOptionIndex]?.text ?? 'Unknown'}]: "${r.comment}"`)
+        .join('\n')
+    : '\nNo citizen comments were provided.';
+
+  const prompt = `Survey: "${survey.title}"
+Description: ${survey.description}
+Total votes: ${total}
+Status: ${survey.status}
+
+Vote distribution:
+${votesSection}
+${commentsSection}
+
+Write a 3-4 sentence neutral summary suitable for a civic council report. Highlight the majority preference, key themes from citizen comments if present, and any notable minority views.`;
+
+  const completion = await getOpenAI().chat.completions.create({
+    model: 'gpt-4o-mini',
+    messages: [
+      {
+        role: 'system',
+        content: 'You are a civic engagement analyst. Generate concise, factual, neutral summaries of community survey results for official council reports. Do not use bullet points — write in flowing prose.'
+      },
+      { role: 'user', content: prompt }
+    ],
+    max_tokens: 300,
+    temperature: 0.4
+  });
+
+  return {
+    surveyId: survey._id,
+    title: survey.title,
+    totalVotes: survey.totalVotes,
+    summary: completion.choices[0].message.content.trim(),
+    generatedAt: new Date()
   };
 };

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Search, Trash2, X, Eye, FileText, Filter, CheckCircle2, Clock, Edit, Download } from 'lucide-react';
+import { Plus, Search, Trash2, X, Eye, FileText, Filter, CheckCircle2, Clock, Edit, Download, Sparkles, Copy, Check } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth';
 import api from '../../api/axios.config';
 import { ENDPOINTS } from '../../api/endpoints';
@@ -25,6 +25,10 @@ const Surveys = () => {
   const [isChangingVote, setIsChangingVote] = useState(false);
   const [voteComment, setVoteComment] = useState('');
   const [activeVoteSurveyResults, setActiveVoteSurveyResults] = useState(null);
+  const [aiSummary, setAiSummary] = useState(null);         // { title, summary, totalVotes, generatedAt }
+  const [aiSurveyId, setAiSurveyId] = useState(null);       // which survey the modal is for
+  const [aiLoading, setAiLoading] = useState(false);
+  const [copied, setCopied] = useState(false);
 
   // Form State
   const [formData, setFormData] = useState({
@@ -151,6 +155,28 @@ const Surveys = () => {
     } catch (err) {
       showToast('Failed to export results', 'error');
     }
+  };
+
+  const handleGetSummary = async (surveyId) => {
+    setAiSurveyId(surveyId);
+    setAiSummary(null);
+    setAiLoading(true);
+    try {
+      const res = await api.get(`${ENDPOINTS.SURVEYS.BASE}/${surveyId}/summary`);
+      setAiSummary(res.data);
+    } catch (err) {
+      showToast(err.response?.data?.message || 'Failed to generate summary', 'error');
+      setAiSurveyId(null);
+    } finally {
+      setAiLoading(false);
+    }
+  };
+
+  const handleCopy = () => {
+    if (!aiSummary?.summary) return;
+    navigator.clipboard.writeText(aiSummary.summary);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
   };
 
   // Form Utils
@@ -283,21 +309,8 @@ const Surveys = () => {
                       ? <span className="bg-primary-100 text-primary-700 text-xs font-semibold px-2 py-0.5 rounded-full flex items-center gap-1.5"><span className="w-1.5 h-1.5 rounded-full bg-primary-500"></span>Active</span>
                       : <span className="bg-primary-50 text-primary-500 text-xs font-semibold px-2 py-0.5 rounded-full">Closed</span>
                     }
-                    {survey.isImportant && <span className="bg-amber-100 text-amber-700 text-xs font-semibold px-2 py-0.5 rounded-full">Important</span>}
+                      {survey.isImportant && <span className="bg-amber-100 text-amber-700 text-xs font-semibold px-2 py-0.5 rounded-full">Important</span>}
                   </div>
-                  {canManage && (
-                    <div className="flex gap-2 hidden group-hover:flex absolute right-4 top-4">
-                      <button onClick={() => openEditModal(survey)} className="text-primary-200 hover:text-primary-600 transition-colors bg-white rounded-full" title="Edit">
-                        <Edit size={16} />
-                      </button>
-                      <button onClick={() => handleExport(survey._id, survey.title)} className="text-primary-200 hover:text-primary-600 transition-colors bg-white rounded-full" title="Export CSV">
-                        <Download size={16} />
-                      </button>
-                      <button onClick={() => handleDelete(survey._id)} className="text-primary-200 hover:text-red-500 transition-colors bg-white rounded-full" title="Close survey">
-                        <Trash2 size={16} />
-                      </button>
-                    </div>
-                  )}
                 </div>
 
                 {/* Body */}
@@ -339,7 +352,6 @@ const Surveys = () => {
                     <button
                       onClick={() => {
                         setActiveVoteSurvey(survey);
-                        // Pre-select the previously voted option
                         setSelectedIdx(survey.userVotedOptionIndex ?? null);
                         setIsChangingVote(isVoted);
                       }}
@@ -354,6 +366,36 @@ const Surveys = () => {
                     </button>
                   )}
                 </div>
+
+                {/* Admin/Official action bar */}
+                {canManage && (
+                  <div className="flex items-center gap-2 pt-3 mt-2 border-t border-primary-100">
+                    <button
+                      onClick={() => handleGetSummary(survey._id)}
+                      className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-violet-700 bg-violet-50 hover:bg-violet-100 border border-violet-200 rounded-lg transition-colors"
+                    >
+                      <Sparkles size={12} /> AI Summary
+                    </button>
+                    <button
+                      onClick={() => handleExport(survey._id, survey.title)}
+                      className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-primary-600 bg-primary-50 hover:bg-primary-100 border border-primary-200 rounded-lg transition-colors"
+                    >
+                      <Download size={12} /> Export CSV
+                    </button>
+                    <button
+                      onClick={() => openEditModal(survey)}
+                      className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-primary-600 bg-primary-50 hover:bg-primary-100 border border-primary-200 rounded-lg transition-colors"
+                    >
+                      <Edit size={12} /> Edit
+                    </button>
+                    <button
+                      onClick={() => handleDelete(survey._id)}
+                      className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-red-500 bg-red-50 hover:bg-red-100 border border-red-200 rounded-lg transition-colors ml-auto"
+                    >
+                      <Trash2 size={12} /> Close
+                    </button>
+                  </div>
+                )}
               </div>
             );
           })}
@@ -567,6 +609,70 @@ const Surveys = () => {
           </div>
         )
       })()}
+
+      {/* --- AI SUMMARY MODAL --- */}
+      {aiSurveyId && (
+        <div className="fixed inset-0 z-50 bg-primary-900/40 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="w-full max-w-lg bg-white border border-primary-200 shadow-2xl rounded-2xl overflow-hidden flex flex-col">
+
+            {/* Header */}
+            <div className="px-6 py-4 border-b border-primary-100 flex justify-between items-center bg-gradient-to-r from-violet-50 to-primary-50">
+              <div className="flex items-center gap-2">
+                <Sparkles size={18} className="text-violet-500" />
+                <h3 className="font-bold text-lg text-primary-900">AI Council Summary</h3>
+              </div>
+              <button
+                className="text-primary-400 hover:text-primary-800 transition-colors p-1 bg-white rounded-full hover:shadow-sm"
+                onClick={() => { setAiSurveyId(null); setAiSummary(null); setCopied(false); }}
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            {/* Body */}
+            <div className="p-6">
+              {aiLoading ? (
+                <div className="flex flex-col items-center gap-3 py-8">
+                  <div className="w-8 h-8 border-2 border-violet-300 border-t-violet-600 rounded-full animate-spin" />
+                  <p className="text-sm text-primary-500 font-medium">Generating summary with AI...</p>
+                </div>
+              ) : aiSummary ? (
+                <>
+                  <div className="flex items-center justify-between mb-3">
+                    <span className="text-xs font-semibold text-primary-500 uppercase tracking-wider">
+                      {aiSummary.totalVotes} votes analysed
+                    </span>
+                    <span className="text-xs text-primary-400">
+                      {new Date(aiSummary.generatedAt).toLocaleTimeString()}
+                    </span>
+                  </div>
+
+                  <div className="bg-violet-50 border border-violet-100 rounded-xl p-4 mb-4">
+                    <p className="text-sm text-primary-800 leading-relaxed">{aiSummary.summary}</p>
+                  </div>
+
+                  <div className="flex gap-3">
+                    <button
+                      onClick={handleCopy}
+                      className="flex items-center gap-2 px-4 py-2 text-sm font-semibold text-violet-700 bg-violet-50 hover:bg-violet-100 border border-violet-200 rounded-xl transition-colors"
+                    >
+                      {copied ? <Check size={14} /> : <Copy size={14} />}
+                      {copied ? 'Copied!' : 'Copy text'}
+                    </button>
+                    <button
+                      onClick={() => handleGetSummary(aiSurveyId)}
+                      className="flex items-center gap-2 px-4 py-2 text-sm font-semibold text-primary-600 bg-primary-50 hover:bg-primary-100 border border-primary-200 rounded-xl transition-colors"
+                    >
+                      <Sparkles size={14} />
+                      Regenerate
+                    </button>
+                  </div>
+                </>
+              ) : null}
+            </div>
+          </div>
+        </div>
+      )}
 
     </div>
   );

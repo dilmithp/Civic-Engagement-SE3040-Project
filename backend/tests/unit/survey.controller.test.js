@@ -100,7 +100,7 @@ describe('Survey Controller — Unit Tests', () => {
 
       await createSurvey(mockReq, mockRes, mockNext);
 
-      expect(SurveyService.createSurvey).toHaveBeenCalledWith(mockReq.body, 'user123', 'Bearer test-token');
+      expect(SurveyService.createSurvey).toHaveBeenCalledWith(mockReq.body, 'user123');
       expect(mockRes.status).toHaveBeenCalledWith(201);
       expect(mockRes.json).toHaveBeenCalledWith({
         status: 'success',

@@ -14,7 +14,8 @@ import {
   updateSurvey,
   deleteSurvey,
   getSurveyResults,
-  exportSurveyResults
+  exportSurveyResults,
+  getSurveySummary
 } from '../controllers/survey.controller.js';
 
 const router = Router();
@@ -77,6 +78,14 @@ router.get(
   protect,
   authorize(ROLES.ADMIN, ROLES.OFFICIAL),
   exportSurveyResults
+);
+
+// Admin/Official: AI-generated council summary
+router.get(
+  '/:id/summary',
+  protect,
+  authorize(ROLES.ADMIN, ROLES.OFFICIAL),
+  getSurveySummary
 );
 
 // Admin/Official: Close/delete survey

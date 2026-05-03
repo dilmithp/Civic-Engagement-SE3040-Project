@@ -3,7 +3,7 @@ import { asyncHandler } from '../utils/asyncHandler.js';
 import { sendSuccess } from '../utils/response.js';
 
 export const createSurvey = asyncHandler(async (req, res) => {
-  const survey = await SurveyService.createSurvey(req.body, req.user.id, req.headers.authorization);
+  const survey = await SurveyService.createSurvey(req.body, req.user.id);
   sendSuccess(res, 201, survey, 'Survey created successfully');
 });
 
@@ -30,6 +30,11 @@ export const voteOnSurvey = asyncHandler(async (req, res) => {
     comment
   );
   sendSuccess(res, 200, survey, 'Vote recorded successfully');
+});
+
+export const getSurveySummary = asyncHandler(async (req, res) => {
+  const result = await SurveyService.getSurveySummary(req.params.id);
+  sendSuccess(res, 200, result, 'AI summary generated');
 });
 
 export const exportSurveyResults = asyncHandler(async (req, res) => {
