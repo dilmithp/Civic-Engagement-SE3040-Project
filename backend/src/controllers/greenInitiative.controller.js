@@ -3,6 +3,7 @@ import { asyncHandler } from '../utils/asyncHandler.js';
 import AppError from '../utils/AppError.js';
 import { sendSuccess } from '../utils/response.js';
 import { fetchWeatherForEvent } from '../utils/weather.service.js';
+import { cloudinary } from '../config/cloudinary.config.js';
 
 // @desc    Create a new green initiative
 // @route   POST /api/v1/green-initiatives
@@ -129,4 +130,73 @@ export const deleteInitiative = asyncHandler(async (req, res, next) => {
     await GreenInitiative.findByIdAndDelete(req.params.id);
 
     sendSuccess(res, 200, null, 'Initiative deleted successfully');
+});
+
+// @desc    Upload completion images for a completed initiative
+// @route   POST /api/v1/green-initiatives/:id/images
+// @access  Private (organizer or admin only)
+export const uploadCompletionImages = asyncHandler(async (req, res, next) => {
+    const initiative = await GreenInitiative.findById(req.params.id);
+
+    if (!initiative) {
+        return next(new AppError('Initiative not found', 404));
+    }
+
+    // Only allow uploads for completed initiatives
+    if (initiative.status !== 'Completed') {
+        return next(new AppError('Images can only be uploaded for Completed initiatives', 400));
+    }
+
+    // Only the organizer or an admin can upload
+    if (String(initiative.organizer) !== String(req.user.id) && req.user.role !== 'admin') {
+        return next(new AppError('Not authorized to upload images for this initiative', 403));
+    }
+
+    if (!req.files || req.files.length === 0) {
+        return next(new AppError('No images were uploaded', 400));
+    }
+
+    // Map multer-cloudinary files to our schema shape
+    const newImages = req.files.map((file) => ({
+        url:      file.path,      // Cloudinary secure URL
+        publicId: file.filename   // Cloudinary public_id (used for deletion later)
+    }));
+
+    initiative.completionImages.push(...newImages);
+    await initiative.save();
+
+    sendSuccess(res, 200, initiative, 'Completion images uploaded successfully');
+});
+
+// @desc    Delete a single completion image from a completed initiative
+// @route   DELETE /api/v1/green-initiatives/:id/images/:imageId
+// @access  Private (organizer or admin only)
+export const deleteCompletionImage = asyncHandler(async (req, res, next) => {
+    const initiative = await GreenInitiative.findById(req.params.id);
+
+    if (!initiative) {
+        return next(new AppError('Initiative not found', 404));
+    }
+
+    // Only the organizer or an admin can delete images
+    if (String(initiative.organizer) !== String(req.user.id) && req.user.role !== 'admin') {
+        return next(new AppError('Not authorized to delete images for this initiative', 403));
+    }
+
+    // Find the image subdocument by its MongoDB _id
+    const image = initiative.completionImages.id(req.params.imageId);
+    if (!image) {
+        return next(new AppError('Image not found', 404));
+    }
+
+    // Remove from Cloudinary
+    if (image.publicId) {
+        await cloudinary.uploader.destroy(image.publicId);
+    }
+
+    // Pull the subdoc from the array and persist
+    image.deleteOne();
+    await initiative.save();
+
+    sendSuccess(res, 200, initiative, 'Image deleted successfully');
 });
