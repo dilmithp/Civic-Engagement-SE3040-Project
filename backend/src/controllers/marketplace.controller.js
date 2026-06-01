@@ -116,6 +116,39 @@ export const updateListingStatus = asyncHandler(async (req, res) => {
 });
 
 /**
+ * @desc    Submit request for a marketplace listing
+ * @route   PATCH /api/v1/marketplace/:id/request
+ * @access  Private
+ */
+export const requestListing = asyncHandler(async (req, res) => {
+    const listing = await MarketplaceService.requestListing(req.params.id, req.user);
+
+    sendSuccess(res, 200, listing, 'Request submitted successfully');
+});
+
+/**
+ * @desc    Cancel currently pending request for a listing
+ * @route   PATCH /api/v1/marketplace/:id/request/cancel
+ * @access  Private
+ */
+export const cancelListingRequest = asyncHandler(async (req, res) => {
+    const listing = await MarketplaceService.cancelListingRequest(req.params.id, req.user);
+
+    sendSuccess(res, 200, listing, 'Request canceled successfully');
+});
+
+/**
+ * @desc    Owner/admin responds to pending listing request
+ * @route   PATCH /api/v1/marketplace/:id/request/respond
+ * @access  Private (owner or admin)
+ */
+export const respondToListingRequest = asyncHandler(async (req, res) => {
+    const listing = await MarketplaceService.respondToListingRequest(req.params.id, req.body.action, req.user);
+
+    sendSuccess(res, 200, listing, `Request ${req.body.action}d successfully`);
+});
+
+/**
  * @desc    Delete a marketplace listing
  * @route   DELETE /api/v1/marketplace/:id
  * @access  Private (owner or admin)

@@ -393,6 +393,127 @@ class MarketplaceService {
         }
 
         listing.status = newStatus;
+        if (newStatus === 'available') {
+            listing.reservedFor = null;
+        }
+        if (newStatus === 'sold' || newStatus === 'expired') {
+            listing.pendingRequestBy = null;
+            listing.pendingRequestAt = null;
+        }
+        await listing.save();
+
+        return listing;
+    }
+
+    /**
+     * Submit an item request for an available listing.
+     * @param {string} id - Listing ID
+     * @param {object} user - Authenticated user { id, role }
+     * @returns {Promise<object>} Updated listing
+     */
+    static async requestListing(id, user) {
+        const listing = await Marketplace.findById(id);
+
+        if (!listing) {
+            throw new AppError(`Marketplace listing with ID "${id}" was not found. It may have been deleted.`, 404);
+        }
+
+        const userId = String(user.id || user._id);
+
+        if (String(listing.owner) === userId) {
+            throw new AppError('You cannot request your own listing.', 400);
+        }
+
+        if (listing.status !== 'available') {
+            throw new AppError('Only available listings can be requested.', 400);
+        }
+
+        if (listing.pendingRequestBy) {
+            if (String(listing.pendingRequestBy) === userId) {
+                throw new AppError('You have already requested this listing. Please wait for the owner response.', 400);
+            }
+
+            throw new AppError('This listing already has a pending request. Please try another listing.', 400);
+        }
+
+        listing.pendingRequestBy = userId;
+        listing.pendingRequestAt = new Date();
+        await listing.save();
+
+        return listing;
+    }
+
+    /**
+     * Cancel the currently pending request for a listing.
+     * @param {string} id - Listing ID
+     * @param {object} user - Authenticated user { id, role }
+     * @returns {Promise<object>} Updated listing
+     */
+    static async cancelListingRequest(id, user) {
+        const listing = await Marketplace.findById(id);
+
+        if (!listing) {
+            throw new AppError(`Marketplace listing with ID "${id}" was not found. It may have been deleted.`, 404);
+        }
+
+        if (!listing.pendingRequestBy) {
+            throw new AppError('There is no pending request to cancel for this listing.', 400);
+        }
+
+        const userId = String(user.id || user._id);
+        if (String(listing.pendingRequestBy) !== userId && user.role !== 'admin') {
+            throw new AppError('You are not authorized to cancel this request.', 403);
+        }
+
+        if (listing.status !== 'available') {
+            throw new AppError('Pending requests can only be canceled while listing is available.', 400);
+        }
+
+        listing.pendingRequestBy = null;
+        listing.pendingRequestAt = null;
+        await listing.save();
+
+        return listing;
+    }
+
+    /**
+     * Owner/admin responds to pending item request.
+     * @param {string} id - Listing ID
+     * @param {'approve'|'reject'} action - Request decision
+     * @param {object} user - Authenticated user { id, role }
+     * @returns {Promise<object>} Updated listing
+     */
+    static async respondToListingRequest(id, action, user) {
+        const listing = await Marketplace.findById(id);
+
+        if (!listing) {
+            throw new AppError(`Marketplace listing with ID "${id}" was not found. It may have been deleted.`, 404);
+        }
+
+        const userId = String(user.id || user._id);
+        if (String(listing.owner) !== userId && user.role !== 'admin') {
+            throw new AppError('You are not authorized to respond to requests for this listing.', 403);
+        }
+
+        if (listing.status !== 'available') {
+            throw new AppError('Requests can only be managed while the listing is available.', 400);
+        }
+
+        if (!listing.pendingRequestBy) {
+            throw new AppError('There is no pending request for this listing.', 400);
+        }
+
+        if (!['approve', 'reject'].includes(action)) {
+            throw new AppError('Invalid action. Use either "approve" or "reject".', 400);
+        }
+
+        if (action === 'approve') {
+            listing.status = 'reserved';
+            listing.reservedFor = listing.pendingRequestBy;
+        }
+
+        listing.pendingRequestBy = null;
+        listing.pendingRequestAt = null;
         await listing.save();
 
         return listing;

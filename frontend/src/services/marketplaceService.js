@@ -34,6 +34,18 @@ export const marketplaceService = {
     return await api.patch(`${ENDPOINTS.MARKETPLACE.BASE}/${id}/status`, { status });
   },
 
+  requestItem: async (id) => {
+    return await api.patch(`${ENDPOINTS.MARKETPLACE.BASE}/${id}/request`);
+  },
+
+  cancelItemRequest: async (id) => {
+    return await api.patch(`${ENDPOINTS.MARKETPLACE.BASE}/${id}/request/cancel`);
+  },
+
+  respondToItemRequest: async (id, action) => {
+    return await api.patch(`${ENDPOINTS.MARKETPLACE.BASE}/${id}/request/respond`, { action });
+  },
+
   deleteListing: async (id) => {
     return await api.delete(`${ENDPOINTS.MARKETPLACE.BASE}/${id}`);
   }

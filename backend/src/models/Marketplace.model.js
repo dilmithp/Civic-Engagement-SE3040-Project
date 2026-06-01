@@ -40,6 +40,18 @@ const marketplaceSchema = new mongoose.Schema(
             enum: ['available', 'reserved', 'sold', 'expired'],
             default: 'available'
         },
+        pendingRequestBy: {
+            type: String,
+            default: null
+        },
+        pendingRequestAt: {
+            type: Date,
+            default: null
+        },
+        reservedFor: {
+            type: String,
+            default: null
+        },
         owner: {
             type: String,
             required: [true, 'Owner is required']

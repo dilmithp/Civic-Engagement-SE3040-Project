@@ -17,7 +17,17 @@ const formatDate = (date) => {
   });
 };
 
-const MarketplaceCard = ({ listing, canManage, onEdit, onDelete, onStatusChange }) => {
+const MarketplaceCard = ({
+  listing,
+  canManage,
+  currentUserId,
+  onEdit,
+  onDelete,
+  onStatusChange,
+  onRequest,
+  onCancelRequest,
+  onRequestResponse
+}) => {
   const {
     _id,
     title,
@@ -28,6 +38,7 @@ const MarketplaceCard = ({ listing, canManage, onEdit, onDelete, onStatusChange 
     status,
     images,
     contactInfo,
+    pendingRequestBy,
     createdAt,
     expiresAt
   } = listing;
@@ -40,6 +51,8 @@ const MarketplaceCard = ({ listing, canManage, onEdit, onDelete, onStatusChange 
   }, [_id, imageList.length]);
 
   const statusClass = STATUS_STYLES[status] || 'badge-neutral';
+  const hasPendingRequest = Boolean(pendingRequestBy);
+  const isMyPendingRequest = hasPendingRequest && String(pendingRequestBy) === String(currentUserId || '');
   const hasMultipleImages = imageList.length > 1;
   const activeImage = imageList[activeImageIndex];
 
@@ -157,9 +170,22 @@ const MarketplaceCard = ({ listing, canManage, onEdit, onDelete, onStatusChange 
           )}
         </div>
 
+        {status === 'available' && hasPendingRequest && (
+          <div className="text-xs rounded-md bg-amber-50 text-amber-700 border border-amber-200 px-2 py-1 inline-flex">
+            Request pending owner review
+          </div>
+        )}
+
         {canManage && (
           <div className="pt-2 border-t border-border flex flex-wrap gap-2">
             <button onClick={() => onEdit(listing)} className="btn btn-sm btn-secondary">Edit</button>
+
+            {status === 'available' && hasPendingRequest && (
+              <>
+                <button onClick={() => onRequestResponse(_id, 'approve')} className="btn btn-sm btn-primary">Approve Request</button>
+                <button onClick={() => onRequestResponse(_id, 'reject')} className="btn btn-sm btn-ghost">Reject Request</button>
+              </>
+            )}
 
             {status !== 'sold' && status !== 'expired' && (
               <button
@@ -179,6 +205,22 @@ const MarketplaceCard = ({ listing, canManage, onEdit, onDelete, onStatusChange 
               <Trash2 size={13} className="mr-1" />
               Delete
             </button>
+          </div>
+        )}
+
+        {!canManage && status === 'available' && (
+          <div className="pt-2 border-t border-border flex flex-wrap gap-2">
+            {!hasPendingRequest && (
+              <button onClick={() => onRequest(_id)} className="btn btn-sm btn-primary">Request Item</button>
+            )}
+
+            {isMyPendingRequest && (
+              <button onClick={() => onCancelRequest(_id)} className="btn btn-sm btn-ghost">Cancel Request</button>
+            )}
+
+            {hasPendingRequest && !isMyPendingRequest && (
+              <span className="text-xs text-textMuted inline-flex items-center">Another citizen already requested this item</span>
+            )}
           </div>
         )}
       </div>
